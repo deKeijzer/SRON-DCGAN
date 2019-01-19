@@ -17,7 +17,8 @@ def load(filename):
     data = file.read()
     dict_ = pickle.loads(data, encoding='latin1') # Python 2 and 3 incompatibility... https://stackoverflow.com/questions/11305790/pickle-incompatibility-of-numpy-arrays-between-python-2-and-3
     file.close()
-    
+    # Free memory
+    del data, file
     return dict_
     
 def load_all_to_array(dir_):
