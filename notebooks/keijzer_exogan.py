@@ -21,8 +21,12 @@ def load(filename):
     del data, file
     return dict_
     
-def load_all_to_array(dir_):
-    paths = glob.glob(dir_+'\\chunck_*.pkgz')
+def load_all_to_array(path, filenames):
+    """
+    path, path to directory containing chunks
+    """ 
+    paths = glob.glob(path+filenames)
+ 
     X = []
     for i in tqdm(range(len(paths))):
         s = load(paths[i])
