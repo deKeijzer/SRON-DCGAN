@@ -21,7 +21,7 @@ An example spectrum would be as follows.
 
 The spectrum along with the parameters like planet mass, planet radius, planet temperature and gas mixture ratios are encoded into an ASPA.  
 These ASPAs are then used to train the DCGAN.  
-After ~8 hours of training on a Tesla M10, the following result is gathered. 
+After ~8 hours of training on a Tesla M10 using 0.25 % of the original ExoGAN training set, the following result is gathered. 
 
 <p align="center"> <img src="https://github.com/deKeijzer/SRON-DCGAN/blob/master/notebooks/plots/DCGAN_generated_cropped.png?raw=true"> </p>
 
