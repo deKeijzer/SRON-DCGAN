@@ -19,38 +19,26 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-# Number of workers for dataloader
-workers = 0 # 0 when to_vram is enabled
-
-# Batch size during training
+workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
 batch_size = 2**11 # 2**11
-print('Batch size: ', batch_size)
-
-# Spatial size of training images. All images will be resized to this
-#   size using a transformer.
 image_size = 32
-nz = 100
-
-# Number of training epochs
-num_epochs =1*10**3
-
-# Learning rate for optimizers
+nz = 100 # size of latent vector
+num_epochs =7*10**3
+torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
 lr = 2e-4
 lr_G = 2e-4
+beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
+selected_gpus = [1,2,3] # Number of GPUs available. Use 0 for CPU mode.
 
-# Beta1 hyperparam for Adam optimizers
-beta1 = 0.5
-
-# Number of GPUs available. Use 0 for CPU mode.
-selected_gpus = [0,1,2,3]
-ngpu = len(selected_gpus)
-print('Number of GPUs used: ', ngpu)
-
-##### Creating custom Dataset classes
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy')
 
 use_saved_weights = True
+
+
+print('Batch size: ', batch_size)
+ngpu = len(selected_gpus)
+print('Number of GPUs used: ', ngpu)
 
 
 """
@@ -82,11 +70,6 @@ device = torch.device("cuda:"+str(selected_gpus[0]) if (torch.cuda.is_available(
 netG = model.Generator(ngpu).to(device)
 netD = model.Discriminator(ngpu).to(device)
 
-# Handle multi-gpu if desired
-if (device.type == 'cuda') and (ngpu > 1):
-    netG = nn.DataParallel(netG, device_ids=selected_gpus, output_device=device)
-    netD = nn.DataParallel(netD, device_ids=selected_gpus, output_device=device)
-
 # Apply weights
 
 # custom weights initialization called on netG and netD
@@ -104,12 +87,17 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict2', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict2', map_location=device))
     except:
         print('Could not load saved weights, using new ones.')
         pass
-    
+
+# Handle multi-gpu if desired
+if (device.type == 'cuda') and (ngpu > 1):
+    netG = nn.DataParallel(netG, device_ids=selected_gpus, output_device=device)
+    netD = nn.DataParallel(netD, device_ids=selected_gpus, output_device=device)
+
 
 """
 Define input training stuff (fancy this up)
@@ -283,7 +271,12 @@ for epoch in range(num_epochs):
             img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
             
         if (iters % 65 == 0) & iters != 0: # save weights every 5 epochs
-            torch.save(netG.module.state_dict(), 'netG_state_dict')
-            torch.save(netD.module.state_dict(), 'netD_state_dict')
+            if ngpu > 1:
+                torch.save(netG.module.state_dict(), 'netG_state_dict2')
+                torch.save(netD.module.state_dict(), 'netD_state_dict2')
+                print('weights saved')
+            else:
+                torch.save(netG.state_dict(), 'netG_state_dict2')
+                torch.save(netD.state_dict(), 'netD_state_dict2')
 
         iters += 1
