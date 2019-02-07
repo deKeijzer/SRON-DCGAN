@@ -33,7 +33,7 @@ selected_gpus = [1,2,3] # Number of GPUs available. Use 0 for CPU mode.
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy')
 
-use_saved_weights = True
+use_saved_weights = False
 
 
 print('Batch size: ', batch_size)
