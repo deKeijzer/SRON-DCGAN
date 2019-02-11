@@ -40,7 +40,7 @@ d_g_conditional_threshold = 0.49 # D_G_z1 < threshold, train G
 
 train_d_g_conditional_per_epoch = False
 
-use_saved_weights = False
+use_saved_weights = True
 
 
 print('Batch size: ', batch_size)
