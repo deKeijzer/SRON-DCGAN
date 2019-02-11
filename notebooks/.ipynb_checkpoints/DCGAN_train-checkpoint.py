@@ -20,7 +20,7 @@ torch.manual_seed(manualSeed)
 Local variables
 """
 workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
-batch_size = 16 # 2**11
+batch_size = 64 # 2**11
 image_size = 32
 nz = 100 # size of latent vector
 num_epochs =7*10**3
@@ -28,7 +28,7 @@ torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algo
 lr = 2e-4
 lr_G = 2e-4
 beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
-selected_gpus = [0] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [2,3] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy')

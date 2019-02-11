@@ -121,3 +121,5 @@ class Discriminator(nn.Module):
 
     def forward(self, input):
         return self.main(input)
+
+
