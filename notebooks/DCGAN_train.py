@@ -20,7 +20,7 @@ torch.manual_seed(manualSeed)
 Local variables
 """
 workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
-batch_size = 2**11 # 2**11
+batch_size = 16 # 2**11
 image_size = 32
 nz = 100 # size of latent vector
 num_epochs =7*10**3
@@ -28,10 +28,17 @@ torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algo
 lr = 2e-4
 lr_G = 2e-4
 beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
-selected_gpus = [1,2,3] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [0] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy')
+
+swap_labels_randomly = False
+
+train_d_g_conditional = False # switch between training D and G based on set threshold
+d_g_conditional_threshold = 0.49 # D_G_z1 < threshold, train G
+
+train_d_g_conditional_per_epoch = False
 
 use_saved_weights = False
 
@@ -49,7 +56,7 @@ shuffle = True
 if shuffle:
     np.random.shuffle(images) # shuffles the images
 
-images = images[:int(len(images)*0.05)] # use only first ... percent of the data (0.05)
+images = images[:int(len(images)*0.1)] # use only first ... percent of the data (0.05)
 print('Number of images: ', len(images))
 
 dataset = numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
@@ -89,6 +96,7 @@ if use_saved_weights:
         # Load saved weights
         netG.load_state_dict(torch.load('netG_state_dict2', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
         netD.load_state_dict(torch.load('netD_state_dict2', map_location=device))
+        print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
         pass
@@ -122,6 +130,8 @@ img_list = []
 G_losses = []
 D_losses = []
 
+switch = True # condition switch, to switch between D and G per epoch
+
 train_D = True
 train_G = True
 
@@ -136,6 +146,17 @@ print("Starting Training Loop...")
 for epoch in range(num_epochs):
     # For each batch in the dataloader
     q = np.random.randint(3, 6)
+    
+    if train_d_g_conditional_per_epoch:
+        if switch == True:
+            train_D = True
+            train_G = False
+            switch = False
+        else:
+            train_G = True
+            train_D = False
+            switch = True
+            
     for i, data in enumerate(dataloader, 0):
         real_cpu = data.to(device) # for PIL images
         b_size = real_cpu.size(0)
@@ -161,22 +182,26 @@ for epoch in range(num_epochs):
         # Generate fake image batch with G
         fake = netG(noise)
 
-
-        if i % q == 0:
-            labels_inverted = 'yes' 
-            label.fill_(fake_label)
-        else:
-            labels_inverted = 'no'
-            label.fill_(real_label)
-        
-        if i > 1:
-            if D_G_z1 < 0.45: # 45
-                train_G = True
-                train_D = False
+        if swap_labels_randomly:
+            if i % q == 0:
+                labels_inverted = 'yes' 
+                label.fill_(fake_label)
             else:
-                train_D = True
-                train_G = False
-
+                labels_inverted = 'no'
+        
+        label.fill_(real_label)
+        labels_inverted = 'no'
+        label.fill_(real_label)
+        
+        if train_d_g_conditional:
+            if i > 1:
+                if D_G_z1 < d_g_conditional_threshold: # 45
+                    train_G = True
+                    train_D = False
+                else:
+                    train_D = True
+                    train_G = False
+                    
         if train_D:
             ############################
             # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
@@ -205,12 +230,13 @@ for epoch in range(num_epochs):
         #    plt.show()
         
         # swap labels for the discriminator when i % q == 0 (so once every q-th batch)
-        if i % q == 0:
-            label.fill_(real_label)
-        else:
-            label.fill_(fake_label)
+        #if i % q == 0:
+        #    label.fill_(real_label)
+        #else:
+        #    label.fill_(fake_label)
 
-        #label.fill_(fake_label) ## make this real label sometimes
+        label.fill_(fake_label) ## make this real label sometimes
+        
         # Classify all fake batch with D
         output = netD(fake.detach()).view(-1)
         # Calculate D's loss on the all-fake batch
@@ -254,7 +280,7 @@ for epoch in range(num_epochs):
         elif train_D:
             training_dg = '\t D'
         
-        if iters % (13) == 0:
+        if iters % (20) == 0:
             print('[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f\t Time: %.2f \t q: %s \t training: %s'
                     % (epoch, num_epochs, i, len(dataloader),
                         errD.item(), errG.item(), D_x, D_G_z1, D_G_z2, (t2-t1), q, training_dg))
@@ -265,12 +291,12 @@ for epoch in range(num_epochs):
         D_losses.append(errD.item())
 
         # Check how the generator is doing by saving G's output on fixed_noise
-        if (iters % 13 == 0) or ((epoch == num_epochs-1) and (i == len(dataloader)-1)):
+        if (iters % 20 == 0) or ((epoch == num_epochs-1) and (i == len(dataloader)-1)):
             with torch.no_grad():
                 fake = netG(fixed_noise).detach().cpu()
             img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
             
-        if (iters % 65 == 0) & iters != 0: # save weights every 5 epochs
+        if (iters % 100 == 0): # save weights every % .... iters
             if ngpu > 1:
                 torch.save(netG.module.state_dict(), 'netG_state_dict2')
                 torch.save(netD.module.state_dict(), 'netD_state_dict2')
@@ -278,5 +304,6 @@ for epoch in range(num_epochs):
             else:
                 torch.save(netG.state_dict(), 'netG_state_dict2')
                 torch.save(netD.state_dict(), 'netD_state_dict2')
+                print('weights saved')
 
         iters += 1
