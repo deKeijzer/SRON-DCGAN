@@ -23,7 +23,7 @@ workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
 batch_size = 64 # 2**11
 image_size = 32
 nz = 100 # size of latent vector
-num_epochs =7*10**3
+num_epochs =7*10**4
 torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
 lr = 2e-4
 lr_G = 2e-4
@@ -36,11 +36,14 @@ images = np.load(path+'first_chunks_25_percent_images.npy')
 swap_labels_randomly = False
 
 train_d_g_conditional = False # switch between training D and G based on set threshold
-d_g_conditional_threshold = 0.49 # D_G_z1 < threshold, train G
+d_g_conditional_threshold = 0.55 # D_G_z1 < threshold, train G
 
 train_d_g_conditional_per_epoch = False
 
-use_saved_weights = False
+train_d_g_conditional_per_n_iters = True
+train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
+
+use_saved_weights = True
 
 
 print('Batch size: ', batch_size)
@@ -56,7 +59,7 @@ shuffle = True
 if shuffle:
     np.random.shuffle(images) # shuffles the images
 
-images = images[:int(len(images)*0.1)] # use only first ... percent of the data (0.05)
+images = images[:int(len(images)*1)] # use only first ... percent of the data (0.05)
 print('Number of images: ', len(images))
 
 dataset = numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
@@ -131,6 +134,7 @@ G_losses = []
 D_losses = []
 
 switch = True # condition switch, to switch between D and G per epoch
+previous_switch = 0
 
 train_D = True
 train_G = True
@@ -192,6 +196,20 @@ for epoch in range(num_epochs):
         label.fill_(real_label)
         labels_inverted = 'no'
         label.fill_(real_label)
+        
+        #train_d_g_conditional_per_n_iters = True
+        #train_d_g_n_iters = 10
+        
+        if train_d_g_conditional_per_n_iters:
+            if previous_switch + train_d_g_n_iters < i:
+                train_G = True
+                train_D = False
+                previous_switch = i
+            else:
+                train_G = False
+                train_D = True
+            
+        
         
         if train_d_g_conditional:
             if i > 1:

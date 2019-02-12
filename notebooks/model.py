@@ -39,32 +39,32 @@ class Generator(nn.Module):
             # input is Z, going into a convolution
             nn.ConvTranspose2d( nz, ngf * 8, 4, 1, 0, bias=False),
             #nn.BatchNorm2d(ngf * 8),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
             
             #4
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ngf * 4),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout2d(0.5),
             
             #7
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d( ngf * 4, ngf * 2, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ngf * 2),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
             nn.Dropout2d(0.5),
             
             #10
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d( ngf * 2, ngf*1, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ngf*1),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
             
             # Go from 1x64x64 to 1x32x32
             nn.Conv2d(ngf, ngf, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ngf*1),
-            nn.ReLU(True),
+            nn.LeakyReLU(0.2, inplace=True),
                         #10
             # state size. (ngf*2) x 16 x 16
             #nn.ConvTranspose2d( ngf * 2, ngf*1, 4, 2, 1, bias=False),
