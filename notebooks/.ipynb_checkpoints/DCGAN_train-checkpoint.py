@@ -40,7 +40,7 @@ d_g_conditional_threshold = 0.55 # D_G_z1 < threshold, train G
 
 train_d_g_conditional_per_epoch = False
 
-train_d_g_conditional_per_n_iters = True
+train_d_g_conditional_per_n_iters = False
 train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
 use_saved_weights = True
@@ -206,8 +206,8 @@ for epoch in range(num_epochs):
                 train_D = False
                 previous_switch = i
             else:
-                train_G = False
-                train_D = True
+                train_G = True
+                train_D = False
             
         
         
