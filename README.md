@@ -26,7 +26,11 @@ After ~8 hours of training on a Tesla M10 using 0.25 % of the original ExoGAN tr
 <p align="center"> <img src="https://github.com/deKeijzer/SRON-DCGAN/blob/master/notebooks/plots/DCGAN_generated_cropped.png?raw=true"> </p>
 
 # Semantic inpainting
-...
+After 55 epochs (batch sized 64), on 0.1*25% of the first 50 ExoGAN chunks.  
+Note that this inpainting is on an ASPA from the training set.  
+
+<p align="center"> <img src="https://github.com/deKeijzer/SRON-DCGAN/blob/master/notebooks/plots/inpainting.png?raw=true"> </p>
+
 
 # Results
 ...
