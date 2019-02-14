@@ -1,4 +1,4 @@
-`This repository is highly in devlopment.  
+`This repository is highly in development.  
 A proper README will follow in the future.`
 
 
