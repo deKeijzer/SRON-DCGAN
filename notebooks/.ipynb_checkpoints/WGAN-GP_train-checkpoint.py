@@ -65,7 +65,7 @@ shuffle = True
 if shuffle:
     np.random.shuffle(images) # shuffles the images
 
-images = images[:int(len(images)*0.1)] # use only first ... percent of the data (0.05)
+images = images[:int(len(images)*1)] # use only first ... percent of the data (0.05)
 print('Number of images: ', len(images))
 
 dataset = numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
@@ -253,7 +253,7 @@ for epoch in range(num_epochs):
                 torch.save(netD.state_dict(), 'netD_state_dict')
             
         
-        if i % (256) == 0:
+        if i % (782) == 0:
             t2 = time.time()
             print('[%d/%d][%d/%d] G loss: %.3f \t D loss: %.3f \t D(x) = %.3f \t D(G(z)) = %.3f \t grad_pen = %.3f \t t = %.3f \t'% 
                       (epoch, num_epochs, i, len(dataloader), g_cost, d_cost, d_real, d_fake, gradient_penalty, (t2-t1)))
