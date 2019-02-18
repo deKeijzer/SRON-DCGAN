@@ -253,7 +253,7 @@ for epoch in range(num_epochs):
                 torch.save(netD.state_dict(), 'netD_state_dict')
             
         
-        if i % (782) == 0:
+        if i % (256) == 0:
             t2 = time.time()
             print('[%d/%d][%d/%d] G loss: %.3f \t D loss: %.3f \t D(x) = %.3f \t D(G(z)) = %.3f \t grad_pen = %.3f \t t = %.3f \t'% 
                       (epoch, num_epochs, i, len(dataloader), g_cost, d_cost, d_real, d_fake, gradient_penalty, (t2-t1)))
