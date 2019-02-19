@@ -49,7 +49,7 @@ train_d_g_conditional_per_epoch = False
 train_d_g_conditional_per_n_iters = False
 train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
-use_saved_weights = True
+use_saved_weights = False
 
 
 print('Batch size: ', batch_size)
@@ -175,8 +175,8 @@ def calc_gradient_penalty(netD, real_data, fake_data, b_size):
 Highly adapted from: https://github.com/jalola/improved-wgan-pytorch/blob/master/gan_train.py
 """
 
-g_iters = 5 # 5
-d_iters = 1 # 1, discriminator is called critic in WGAN paper
+g_iters = 1 # 5
+d_iters = 5 # 1, discriminator is called critic in WGAN paper
 
 one = torch.FloatTensor([1]).to(device)
 mone = one * -1
