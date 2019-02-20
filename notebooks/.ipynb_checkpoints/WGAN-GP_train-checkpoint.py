@@ -175,8 +175,8 @@ def calc_gradient_penalty(netD, real_data, fake_data, b_size):
 Highly adapted from: https://github.com/jalola/improved-wgan-pytorch/blob/master/gan_train.py
 """
 
-g_iters = 5 # 5
-d_iters = 1 # 1, discriminator is called critic in WGAN paper
+g_iters = 1 # 5
+d_iters = 2 # 1, discriminator is called critic in WGAN paper
 
 one = torch.FloatTensor([1]).to(device)
 mone = one * -1
