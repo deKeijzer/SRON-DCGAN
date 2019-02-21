@@ -28,10 +28,10 @@ nz = 100 # size of latent vector
 num_epochs = 10*10**3
 torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
 lr = 1e-4
-beta1 = 0.5
+beta1 = 0
 beta2 = 0.9
 
-lambda_ = 10
+lambda_ = 10 # 10
 
 beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
 selected_gpus = [2,3] # Number of GPUs available. Use 0 for CPU mode.
@@ -50,6 +50,9 @@ train_d_g_conditional_per_n_iters = False
 train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
 use_saved_weights = False
+
+g_iters = 1 # 5
+d_iters = 2 # 1, discriminator is called critic in WGAN paper
 
 
 print('Batch size: ', batch_size)
@@ -103,8 +106,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict-Copy1', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict-Copy1', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -149,37 +152,37 @@ def calc_gradient_penalty(netD, real_data, fake_data, b_size):
     """
     Source: https://github.com/jalola/improved-wgan-pytorch/blob/master/gan_train.py
     """
-    alpha = torch.rand(b_size, 1)
+    one = torch.tensor(1, device=device)
+    
+    alpha = torch.rand(b_size, 1, device=device)
     alpha = alpha.expand(b_size, int(real_data.nelement()/b_size)).contiguous()
     alpha = alpha.view(b_size, 1, image_size, image_size)
-    alpha = alpha.to(device)
+    #alpha = alpha.to(device)
     
-    fake_data = fake_data.view(b_size, 1, image_size, image_size)
-    interpolates = alpha * real_data.detach() + ((1 - alpha) * fake_data.detach())
+    fake_data = fake_data.view(b_size, one, image_size, image_size)
+    interpolates = alpha * real_data + ((one - alpha) * fake_data)
 
-    interpolates = interpolates.to(device)
+    #interpolates = interpolates.to(device)
     interpolates.requires_grad_(True)
 
     disc_interpolates = netD(interpolates)
 
     gradients = autograd.grad(outputs=disc_interpolates, inputs=interpolates,
-                              grad_outputs=torch.ones(disc_interpolates.size()).to(device),
+                              grad_outputs=torch.ones(disc_interpolates.size(), device=device),
                               create_graph=True, retain_graph=True, only_inputs=True)[0]
 
-    gradients = gradients.view(gradients.size(0), -1)                              
-    gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean() * lambda_
+    gradients = gradients.view(gradients.size(0), - one)                              
+    gradient_penalty = ((gradients.norm(2, dim=1) - one) ** 2).mean() * lambda_
     return gradient_penalty
 
 
 """
 Highly adapted from: https://github.com/jalola/improved-wgan-pytorch/blob/master/gan_train.py
 """
-
-g_iters = 1 # 5
-d_iters = 2 # 1, discriminator is called critic in WGAN paper
-
 one = torch.FloatTensor([1]).to(device)
 mone = one * -1
+
+MSELoss = nn.MSELoss()
 
 iters = 0
 t1 = time.time()
@@ -232,10 +235,16 @@ for epoch in range(num_epochs):
 
             # train with interpolates data
             gradient_penalty = calc_gradient_penalty(netD, real, fake, b_size)
-
-             # final disc cost
-            d_cost = d_fake - d_real + gradient_penalty
-            d_cost.backward()
+            
+            # Additional loss terms
+            mean_L = MSELoss(fake.mean(), torch.tensor(0.46, device=device))*50
+            std_L = MSELoss(fake.std(), torch.tensor(0.46, device=device))*50
+            
+            # final disc cost
+            L = d_fake - d_real + gradient_penalty + mean_L + std_L
+            
+            L.backward()
+            
             w_dist = d_fake  - d_real # wasserstein distance
             optimizerD.step()
             
@@ -253,10 +262,10 @@ for epoch in range(num_epochs):
                 torch.save(netD.state_dict(), 'netD_state_dict')
             
         
-        if i % (256) == 0:
+        if i % (64) == 0:
             t2 = time.time()
-            print('[%d/%d][%d/%d] G loss: %.3f \t D loss: %.3f \t D(x) = %.3f \t D(G(z)) = %.3f \t grad_pen = %.3f \t t = %.3f \t'% 
-                      (epoch, num_epochs, i, len(dataloader), g_cost, d_cost, d_real, d_fake, gradient_penalty, (t2-t1)))
+            print('[%d/%d][%d/%d] \t Total loss = %.3f \t Critic loss = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f'% 
+                      (epoch, num_epochs, i, len(dataloader), L, w_dist, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1)))
             t1 = time.time()
                 
         iters += i
