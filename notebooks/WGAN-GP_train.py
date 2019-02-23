@@ -34,7 +34,7 @@ beta2 = 0.9
 lambda_ = 10 # 10
 
 beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
-selected_gpus = [2,3] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [0,1] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy')
@@ -51,8 +51,8 @@ train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
 use_saved_weights = False
 
-g_iters = 1 # 5
-d_iters = 2 # 1, discriminator is called critic in WGAN paper
+g_iters = 2 # 5
+d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
 print('Batch size: ', batch_size)
@@ -203,10 +203,16 @@ for epoch in range(num_epochs):
             noise = torch.randn(batch_size, nz, 1, 1, device=device)
             noise.requires_grad_(True)
             fake = netG(noise)
-
-            g_cost = netD(fake).mean()
+            
+            # Additional loss terms
+            mean_L = MSELoss(netG(noise).mean(), torch.tensor(0.46, device=device))*5
+            std_L = MSELoss(netG(noise).std(), torch.tensor(0.46, device=device))*5
+            #mean_L = 0
+            #std_L = 0
+            
+            g_cost = netD(fake).mean() #- mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
-            g_cost = -g_cost
+            g_cost = -g_cost # -1 to maximize g_cost
 
         optimizerG.step()
 
@@ -235,18 +241,16 @@ for epoch in range(num_epochs):
 
             # train with interpolates data
             gradient_penalty = calc_gradient_penalty(netD, real, fake, b_size)
-            
-            # Additional loss terms
-            mean_L = MSELoss(fake.mean(), torch.tensor(0.46, device=device))*50
-            std_L = MSELoss(fake.std(), torch.tensor(0.46, device=device))*50
-            
+
             # final disc cost
-            L = d_fake - d_real + gradient_penalty + mean_L + std_L
+            d_cost = d_fake - d_real + gradient_penalty
+
+            d_cost.backward()
             
-            L.backward()
+            optimizerD.step()
             
             w_dist = d_fake  - d_real # wasserstein distance
-            optimizerD.step()
+            L = d_cost + g_cost
             
         
         
@@ -262,10 +266,10 @@ for epoch in range(num_epochs):
                 torch.save(netD.state_dict(), 'netD_state_dict')
             
         
-        if i % (64) == 0:
+        if i % (16) == 0:
             t2 = time.time()
-            print('[%d/%d][%d/%d] \t Total loss = %.3f \t Critic loss = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f'% 
-                      (epoch, num_epochs, i, len(dataloader), L, w_dist, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1)))
+            print('[%d/%d][%d/%d] \t Total loss = %.3f \t d_cost = %.3f \t g_cost = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f'% 
+                      (epoch, num_epochs, i, len(dataloader), L, d_cost, g_cost, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1)))
             t1 = time.time()
                 
         iters += i
