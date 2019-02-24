@@ -34,10 +34,10 @@ beta2 = 0.9
 lambda_ = 10 # 10
 
 beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
-selected_gpus = [0,1] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [0] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
-images = np.load(path+'first_chunks_25_percent_images.npy')
+images = np.load(path+'first_chunks_25_percent_images.npy').astype('float32')
 
 swap_labels_randomly = False
 
@@ -49,7 +49,7 @@ train_d_g_conditional_per_epoch = False
 train_d_g_conditional_per_n_iters = False
 train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
-use_saved_weights = False
+use_saved_weights = True
 
 g_iters = 2 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
@@ -106,8 +106,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict-Copy1', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict-Copy1', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
