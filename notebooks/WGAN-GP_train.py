@@ -52,7 +52,7 @@ train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
 use_saved_weights = True
 
-g_iters = 2 # 5
+g_iters = 10 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
@@ -191,6 +191,10 @@ for epoch in range(num_epochs):
     for i, data in enumerate(dataloader, 0):
         
         real = data.to(device)
+        real[:, :, 19:, :] = 0.45 # set noise equal to 0.45
+
+        plt.imshow(real[0, 0, :, :].detach().cpu())
+        plt.show()
         b_size = real.size(0)
         
         """
@@ -198,6 +202,10 @@ for epoch in range(num_epochs):
         """
         for p in netD.parameters():
             p.requires_grad_(False)
+        
+        # Calculate batch mean & std values, instead of using the mean/std of the complete train set.
+        real_mean = real.mean()
+        real_std = real.std()
 
         for _ in range(g_iters):
             netG.zero_grad()
@@ -206,12 +214,12 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            mean_L = MSELoss(netG(noise).mean(), torch.tensor(0.46, device=device))*3
-            std_L = MSELoss(netG(noise).std(), torch.tensor(0.46, device=device))*3
+            mean_L = MSELoss(netG(noise).mean(), real_mean)*3
+            std_L = MSELoss(netG(noise).std(), real_std)*3
             #mean_L = 0
             #std_L = 0
             
-            g_cost = netD(fake).mean() #- mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
+            g_cost = netD(fake).mean() - mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
@@ -260,11 +268,11 @@ for epoch in range(num_epochs):
         if (iters % 100 == 0): # save weights every % .... iters
             #print('weights saved')
             if ngpu > 1:
-                torch.save(netG.module.state_dict(), 'netG_state_dict')
-                torch.save(netD.module.state_dict(), 'netD_state_dict')
+                torch.save(netG.module.state_dict(), 'netG_state_dict0')
+                torch.save(netD.module.state_dict(), 'netD_state_dict0')
             else:
-                torch.save(netG.state_dict(), 'netG_state_dict')
-                torch.save(netD.state_dict(), 'netD_state_dict')
+                torch.save(netG.state_dict(), 'netG_state_dict0')
+                torch.save(netD.state_dict(), 'netD_state_dict0')
             
         
         if i % (16) == 0:
