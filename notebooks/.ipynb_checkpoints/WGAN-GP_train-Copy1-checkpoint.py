@@ -51,7 +51,7 @@ train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
 
 use_saved_weights = True
 
-g_iters = 3 # 5
+g_iters = 2 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
@@ -106,8 +106,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict3-Copy1', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict3-Copy1', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -205,8 +205,8 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            mean_L = MSELoss(netG(noise).mean(), torch.tensor(0.46, device=device))*5
-            std_L = MSELoss(netG(noise).std(), torch.tensor(0.46, device=device))*5
+            mean_L = MSELoss(netG(noise).mean(), torch.tensor(0.46, device=device))*2
+            std_L = MSELoss(netG(noise).std(), torch.tensor(0.46, device=device))*2
             #mean_L = 0
             #std_L = 0
             
