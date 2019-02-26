@@ -106,8 +106,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict2', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict2', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')

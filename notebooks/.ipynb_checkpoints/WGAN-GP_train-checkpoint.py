@@ -22,7 +22,7 @@ torch.manual_seed(manualSeed)
 Local variables
 """
 workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
-batch_size = 64 # 2**11
+batch_size = 64 # 64
 image_size = 32
 nz = 100 # size of latent vector
 num_epochs = 10*10**3
@@ -107,8 +107,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict0', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict0', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
