@@ -41,6 +41,7 @@ class Generator(nn.Module):
             #nn.BatchNorm2d(ngf * 8),
             #nn.LayerNorm(ngf*8),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             #4
             # state size. (ngf*8) x 4 x 4
@@ -64,12 +65,15 @@ class Generator(nn.Module):
             #nn.BatchNorm2d(ngf*1),
             #nn.LayerNorm(ngf*1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             # Go from 1x64x64 to 1x32x32
             nn.Conv2d(ngf, ngf, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ngf*1),
             #nn.LayerNorm(ngf),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
+            
                         #10
             # state size. (ngf*2) x 16 x 16
             #nn.ConvTranspose2d( ngf * 2, ngf*1, 4, 2, 1, bias=False),
@@ -79,7 +83,7 @@ class Generator(nn.Module):
             #13
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(ngf*1, nc, 4, 2, 1, bias=False),
-            nn.Tanh()
+            #nn.Tanh()
             # state size. (nc) x 64 x 64
         )
 
@@ -99,30 +103,35 @@ class Discriminator(nn.Module):
             #nn.BatchNorm2d(ndf * 1),
             #nn.LayerNorm(ndf*1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             # state size. (ndf) x 32 x 32
             nn.Conv2d(ndf, ndf * 1, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ndf * 1),
             #nn.LayerNorm(ndf*1),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             # state size. (ndf*2) x 16 x 16
             nn.Conv2d(ndf * 1, ndf * 2, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ndf * 2),
             #nn.LayerNorm(ndf*2),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             # state size. (ndf*4) x 8 x 8
             nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ndf * 4),
             #nn.LayerNorm(ndf*4),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             # state size. (ndf*4) x 8 x 8
             nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
             #nn.BatchNorm2d(ndf * 8),
             #nn.LayerNorm(ndf*8),
             nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(0.5),
             
             # state size. (ndf*8) x 4 x 4
             nn.Conv2d(ndf * 8, 1, 1, 1, 0, bias=False),

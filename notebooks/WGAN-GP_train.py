@@ -5,6 +5,7 @@ import time as t
 
 import torch.nn as nn
 import torch.optim as optim
+from torch.autograd import gradcheck
 import torchvision.utils as vutils
 import time as time
 
@@ -27,33 +28,24 @@ image_size = 32
 nz = 100 # size of latent vector
 num_epochs = 10*10**3
 torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
-lr = 1e-4
-beta1 = 0
+lrG = 1e-4
+lrD = 1e-4
+
+beta1 = 0.5 # 0.5
 beta2 = 0.9
 
 lambda_ = 10 # 10
 
-beta1 = 0.5 # Beta1 hyperparam for Adam optimizers
-selected_gpus = [0] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [0,1,2,3] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy').astype('float32')
 images = images[:110000] # select first 100k images
 
-swap_labels_randomly = False
+use_saved_weights = False
 
-train_d_g_conditional = False # switch between training D and G based on set threshold
-d_g_conditional_threshold = 0.55 # D_G_z1 < threshold, train G
-
-train_d_g_conditional_per_epoch = False
-
-train_d_g_conditional_per_n_iters = False
-train_d_g_n_iters = 2 # When 2, train D 2 times before training G 1 time
-
-use_saved_weights = True
-
-g_iters = 10 # 5
-d_iters = 1 # 1, discriminator is called critic in WGAN paper
+g_iters = 1 # 5
+d_iters = 10 # 1, discriminator is called critic in WGAN paper
 
 
 print('Batch size: ', batch_size)
@@ -107,8 +99,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict0', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict0', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -123,31 +115,9 @@ if (device.type == 'cuda') and (ngpu > 1):
 """
 Define input training stuff (fancy this up)
 """
-# Initialize BCELoss function
-criterion = nn.BCELoss()
-
-# Create batch of latent vectors that we will use to visualize
-#  the progression of the generator
-fixed_noise = torch.randn(64, nz, 1, 1, device=device)
-
-# Establish convention for real and fake labels during training
-real_label = 1
-fake_label = 0
-
 # Setup Adam optimizers for both G and D
-optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, beta2)) # should be sgd
-optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, beta2))
-
-# Lists to keep track of progress
-img_list = []
-G_losses = []
-D_losses = []
-
-switch = True # condition switch, to switch between D and G per epoch
-previous_switch = 0
-
-train_D = True
-train_G = True
+optimizerD = optim.Adam(netD.parameters(), lr=lrD, betas=(beta1, beta2)) # should be sgd
+optimizerG = optim.Adam(netG.parameters(), lr=lrG, betas=(beta1, beta2))
 
 def calc_gradient_penalty(netD, real_data, fake_data, b_size):
     """
@@ -214,10 +184,10 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            mean_L = MSELoss(netG(noise).mean(), real_mean)*3
-            std_L = MSELoss(netG(noise).std(), real_std)*3
-            #mean_L = 0
-            #std_L = 0
+            #mean_L = MSELoss(netG(noise).mean(), real_mean)*3 # 3
+            #std_L = MSELoss(netG(noise).std(), real_std)*3 # 3
+            mean_L = 0
+            std_L = 0
             
             g_cost = netD(fake).mean() - mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
@@ -263,7 +233,9 @@ for epoch in range(num_epochs):
             
         
         
-        
+        """
+        Save weights and print statistics
+        """
         weights_saved = False
         if (iters % 100 == 0): # save weights every % .... iters
             #print('weights saved')
