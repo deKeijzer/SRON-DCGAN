@@ -45,7 +45,7 @@ images = images[:110000] # select first 100k images
 use_saved_weights = False
 
 g_iters = 1 # 5
-d_iters = 10 # 1, discriminator is called critic in WGAN paper
+d_iters = 2 # 1, discriminator is called critic in WGAN paper
 
 
 print('Batch size: ', batch_size)
@@ -61,7 +61,6 @@ shuffle = True
 if shuffle:
     np.random.shuffle(images) # shuffles the images
 
-images = images[:int(len(images)*1)] # use only first ... percent of the data (0.05)
 print('Number of images: ', len(images))
 
 dataset = numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
@@ -161,10 +160,10 @@ for epoch in range(num_epochs):
     for i, data in enumerate(dataloader, 0):
         
         real = data.to(device)
-        real[:, :, 19:, :] = 0.45 # set noise equal to 0.45
+        #real[:, :, 19:, :] = 0.45 # set noise equal to 0.45
 
-        plt.imshow(real[0, 0, :, :].detach().cpu())
-        plt.show()
+        #plt.imshow(real[0, 0, :, :].detach().cpu())
+        #plt.show()
         b_size = real.size(0)
         
         """
@@ -189,7 +188,7 @@ for epoch in range(num_epochs):
             mean_L = 0
             std_L = 0
             
-            g_cost = netD(fake).mean() - mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
+            g_cost = netD(fake).mean()  - mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
