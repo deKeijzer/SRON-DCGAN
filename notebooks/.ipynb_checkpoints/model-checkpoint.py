@@ -51,7 +51,7 @@ class Generator(nn.Module):
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d( ngf * 4, ngf * 2, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout2d(0.5),
+            #nn.Dropout2d(0.5),
             
             #10
             # state size. (ngf*2) x 16 x 16
