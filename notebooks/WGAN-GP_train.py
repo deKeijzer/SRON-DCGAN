@@ -17,7 +17,7 @@ from keijzer_exogan import *
 # initialize random seeds
 manualSeed = 999
 random.seed(manualSeed)
-torch.manual_seed(manualSeed)
+torch.manual_seed(manualSeed) 
 
 """
 Local variables
