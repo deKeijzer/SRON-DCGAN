@@ -183,10 +183,10 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            #mean_L = MSELoss(netG(noise).mean(), real_mean)*3 # 3
-            #std_L = MSELoss(netG(noise).std(), real_std)*3 # 3
-            mean_L = 0
-            std_L = 0
+            mean_L = MSELoss(netG(noise).mean(), real_mean)*3 # 3
+            std_L = MSELoss(netG(noise).std(), real_std)*3 # 3
+            #mean_L = 0
+            #std_L = 0
             
             g_cost = netD(fake).mean()  - mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
