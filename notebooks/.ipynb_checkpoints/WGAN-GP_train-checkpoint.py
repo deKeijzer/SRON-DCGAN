@@ -17,7 +17,7 @@ from keijzer_exogan import *
 # initialize random seeds
 manualSeed = 999
 random.seed(manualSeed)
-torch.manual_seed(manualSeed)
+torch.manual_seed(manualSeed) 
 
 """
 Local variables
@@ -36,13 +36,13 @@ beta2 = 0.9
 
 lambda_ = 10 # 10
 
-selected_gpus = [0,1,2,3] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [1,2,3] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy').astype('float32')
-images = images[:110000] # select first 100k images
+images = images[:100000] # select first 100k images
 
-use_saved_weights = False
+use_saved_weights = True
 
 g_iters = 1 # 5
 d_iters = 2 # 1, discriminator is called critic in WGAN paper
@@ -98,8 +98,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict0', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict0', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -183,8 +183,8 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            mean_L = MSELoss(netG(noise).mean(), real_mean)*3 # 3
-            std_L = MSELoss(netG(noise).std(), real_std)*3 # 3
+            mean_L = MSELoss(netG(noise).mean(), real_mean)*100 # 3
+            std_L = MSELoss(netG(noise).std(), real_std)*100 # 3
             #mean_L = 0
             #std_L = 0
             
