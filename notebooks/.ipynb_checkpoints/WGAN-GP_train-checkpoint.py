@@ -18,6 +18,7 @@ from keijzer_exogan import *
 manualSeed = 999
 random.seed(manualSeed)
 torch.manual_seed(manualSeed) 
+#torch.set_num_threads(16)
 
 """
 Local variables
@@ -36,13 +37,13 @@ beta2 = 0.9
 
 lambda_ = 10 # 10
 
-selected_gpus = [1,2,3] # Number of GPUs available. Use 0 for CPU mode.
+selected_gpus = [0,1,2] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy').astype('float32')
-images = images[:100000] # select first 100k images
+images = images[:5000] # select first 100k images
 
-use_saved_weights = True
+use_saved_weights = False
 
 g_iters = 1 # 5
 d_iters = 2 # 1, discriminator is called critic in WGAN paper
@@ -98,8 +99,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict0', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict0', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict03_43', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict03_43', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -144,6 +145,13 @@ def calc_gradient_penalty(netD, real_data, fake_data, b_size):
     gradients = gradients.view(gradients.size(0), - one)                              
     gradient_penalty = ((gradients.norm(2, dim=1) - one) ** 2).mean() * lambda_
     return gradient_penalty
+
+def save_progress(experiment_name, variable_name, progress_list):
+    path = 'gan_data//training_progress//'
+    progress_list = np.array(progress_list)
+    file = open(path+variable_name+"_"+experiment_name+'.txt', mode="a")
+    np.savetxt(file, progress_list)
+    file.close()
 
 
 """
@@ -251,5 +259,26 @@ for epoch in range(num_epochs):
             print('[%d/%d][%d/%d] \t Total loss = %.3f \t d_cost = %.3f \t g_cost = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f'% 
                       (epoch, num_epochs, i, len(dataloader), L, d_cost, g_cost, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1)))
             t1 = time.time()
-                
+            
+        """Progress saver"""
+        if iters == 0:
+            arr_d_fake = []
+            arr_d_real = []
+            
+        if (iters % (64) == 0) and (iters != 0):
+            variable_names = ['d_fake', 'd_real']
+            variables_to_save = [arr_d_fake, arr_d_real]
+            
+            for z,variable in enumerate(variables_to_save):
+                save_progress('test', variable_names[z], variable)
+            
+            arr_d_fake = []
+            arr_d_real = []
+            print('saved variable progress')
+        
+        arr_d_fake.append(d_fake.detach().cpu().numpy())
+        arr_d_real.append(d_real.detach().cpu().numpy())
+        
+        #print(len(arr_d_fake), len(arr_d_real))
+        
         iters += i
