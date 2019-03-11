@@ -23,25 +23,13 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
-batch_size = 64 # 64
-image_size = 32
-nz = 100 # size of latent vector
-num_epochs = 10*10**3
-torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
-lrG = 1e-4
-lrD = 1e-4
+selected_gpus = [0] # Selected GPUs
 
-beta1 = 0.5 # 0.5
-beta2 = 0.9
+path = 'F:\Jupyterlab\SRON-DCGAN\data\\' # Storage location of the train/test data
 
-lambda_ = 10 # 10
-
-selected_gpus = [0] # Number of GPUs available. Use 0 for CPU mode.
-
-path = 'F:\Jupyterlab\SRON-DCGAN\data\\' #notice how you dont put the last folder in here...
 images = np.load(path+'first.npy').astype('float32')
-images = images[:500000] # select first 100k images
+
+images = images[:10000] # select first ... images
 
 use_saved_weights = True
 
@@ -49,10 +37,30 @@ g_iters = 1 # 5
 d_iters = 2 # 1, discriminator is called critic in WGAN paper
 
 
+
+"""
+Local variables that generally stay unchanged
+"""
+batch_size = 64 # 64
+num_epochs = 10*10**3
+
+lrG = 1e-4
+lrD = 1e-4
+
+beta1 = 0.5 # beta1 for Adam
+beta2 = 0.9 # beta2 for Adam
+
+lambda_ = 10 # Scale factor for gradient_penalty
+
+workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
+image_size = 32
+nz = 100 # size of latent vector
+torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
+
+
 print('Batch size: ', batch_size)
 ngpu = len(selected_gpus)
 print('Number of GPUs used: ', ngpu)
-
 
 """
 Load data and prepare DataLoader
@@ -65,7 +73,6 @@ if shuffle:
 print('Number of images: ', len(images))
 
 dataset = numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
-#dataset = numpy_dataset(data=images, to_vram=True, transform=transforms.Compose([transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])) # to_vram pins it to all GPU's
 
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
@@ -99,8 +106,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_test', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_test', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -270,7 +277,7 @@ for epoch in range(num_epochs):
             variables_to_save = [arr_d_fake, arr_d_real]
             
             for z,variable in enumerate(variables_to_save):
-                save_progress('test', variable_names[z], variable)
+                save_progress('laptop', variable_names[z], variable)
             
             arr_d_fake = []
             arr_d_real = []
