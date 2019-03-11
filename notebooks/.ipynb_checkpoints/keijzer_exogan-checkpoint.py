@@ -5,6 +5,7 @@ import torch
 
 import numpy as np
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -78,6 +79,62 @@ def plot_spectrum(x, y, log_scale=True, figsize=(10,5)):
         plt.xscale('log')
     
     return plt
+
+
+def plot_trans(x,y, multi=False, savefig=False, label=None, x_max=None):
+    """
+    multi: plot multiple arrays
+    if true, x must be a list of arrays [x1, x2, x3], same for y.
+    note that all trans spectra must have the same range & spectral res
+    """
+    
+    plt.figure(figsize=(13,4))
+    
+
+    
+    
+    if multi:
+        for i in range(len(x)):
+            plt.plot(x[i], y[i], '.-', linewidth=1, ms=3, label=str(i))
+    else:
+        plt.plot(x, y, '.-', color='black', linewidth=1, ms=3, label=label)
+    
+
+
+    plt.xlabel(u'$\lambda$ [µm]')
+    plt.ylabel(u'$(R_P / R_*)^2$')
+
+
+    """Figure formatting"""
+    max_value = np.array(x).flatten().max()
+    
+    plt.gca().set_xscale('log')
+    #plt.gca().set_xticks([1, 10]) # Michiel uses this range for ARIEL retrieval challenge
+    plt.gca().set_xticks([0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, max_value]) # Taken from doi:10.1038/nature16068 (up till 5)
+    plt.gca().get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+
+    plt.gca().yaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter('{x:,.4f}')) # specify y-axis to have 3 decimals
+    plt.gca().xaxis.set_major_formatter(matplotlib.ticker.StrMethodFormatter('{x:,.1f}')) # specify y-axis to have 3 decimals
+    
+    plt.grid()
+    plt.tight_layout()
+    
+    if multi:
+        legendloc = (1, 1-len(x)*0.07)
+    else:
+        legendloc = (1, 0.85)
+    
+    plt.legend(loc='lower left', bbox_to_anchor=legendloc, borderaxespad=0, frameon=False)
+    
+    if savefig:
+        plt.savefig('/home/brian/notebooks/plots/plot.png', dpi=500)
+    return
+
+
+
+
+
+
 
 
 class numpy_dataset(Dataset):
