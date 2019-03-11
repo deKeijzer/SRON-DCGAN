@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import copy # copy.deepcopy(dict_variable) to actually copy a dict without problems
 
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
@@ -131,6 +132,65 @@ def plot_trans(x,y, multi=False, savefig=False, label=None, x_max=None):
     return
 
 
+def inverse_scale(X_, X_min, X_max):
+    """
+    X_ is scaled X
+    X is unscaled X_
+    """
+    X = X_ * (X_max - X_min) + X_min
+    return X
+
+
+def decode_params_from_aspa(aspa):
+    """The values of the image parts from the aspa (still encoded)"""
+    # Grab the values 
+    spectrum = aspa[:16, :25].flatten()
+    params = [aspa[:16, 25+i:26+i].mean() for i in range(7)]
+    
+    
+    """Decode to arrays"""
+    # min max values for params used to decode
+    min_values = [1.518400e+27, 
+                      1.000000e+03, 
+                      -1.842068e+01, 
+                      5.592880e+07, 
+                      -1.842068e+01, 
+                      -1.842068e+01, 
+                      -1.842068e+01]
+
+    max_values = [3.796000e+27, 
+                      2.000000e+03, 
+                      -2.302585e+00, 
+                      1.048665e+08, 
+                      -2.302585e+00, 
+                      -2.302585e+00,
+                      -2.302585e+00]
+
+    # Initialize dict to be used for the param values
+    params_dict = {
+        'planet_mass': 0,
+        'temp_profile': 0,
+        'ch4_mixratio': 0,
+        'planet_radius': 0,
+        'h2o_mixratio': 0,
+        'co2_mixratio': 0,
+        'co_mixratio': 0
+    }
+    
+    
+    for i,param in enumerate(params_dict):
+        # put aspa values in dict
+        params_dict[param] = params[i]
+
+        # inverse scale these values
+        params_dict[param] = inverse_scale(params[i], min_values[i], max_values[i])
+
+        # scale mixratios from log back to linear
+        if 'mixratio' in param: 
+            params_dict[param] = np.exp(params_dict[param])
+            #print(param, params_dict[param])
+        
+    return params_dict
 
 
 
