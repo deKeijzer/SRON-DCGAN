@@ -41,9 +41,9 @@ selected_gpus = [0,1,2] # Number of GPUs available. Use 0 for CPU mode.
 
 path = '/datb/16011015/ExoGAN_data/selection//' #notice how you dont put the last folder in here...
 images = np.load(path+'first_chunks_25_percent_images.npy').astype('float32')
-images = images[:5000] # select first 100k images
+images = images[:500000] # select first 100k images
 
-use_saved_weights = False
+use_saved_weights = True
 
 g_iters = 1 # 5
 d_iters = 2 # 1, discriminator is called critic in WGAN paper
@@ -99,8 +99,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('netG_state_dict03_43', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('netD_state_dict03_43', map_location=device))
+        netG.load_state_dict(torch.load('netG_state_dict0', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('netD_state_dict0', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
