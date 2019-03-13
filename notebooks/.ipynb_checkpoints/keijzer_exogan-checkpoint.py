@@ -90,17 +90,36 @@ def plot_trans(x,y, multi=False, savefig=False, label=None, x_max=None):
     if true, x must be a list of arrays [x1, x2, x3], same for y.
     note that all trans spectra must have the same range & spectral res
     """
-    
-    plt.figure(figsize=(13,4))
-    
 
+    plt.figure(figsize=(15,4))
     
-    
-    if multi:
-        for i in range(len(x)):
-            plt.plot(x[i], y[i], '.-', linewidth=1, ms=3, label=str(i))
+    # Set the max value
+    if x_max == None:
+        max_value = np.array(x).max()
     else:
-        plt.plot(x, y, '.-', color='black', linewidth=1, ms=3, label=label)
+        max_value = x_max
+        
+    
+    # Convert ndarrays to df to slice up till max value
+    dfs = []
+    if type(x) == list: # accounts for x being a list of arrays
+        for i in range(len(x)):
+            df = pd.DataFrame([x[i],y[i]]).T
+            df.columns = ['x', 'y']
+            df = df[(df.x <= max_value)]
+            dfs.append(df)
+    else:
+        df = pd.DataFrame([x,y]).T
+        df.columns = ['x', 'y']
+        df = df[(df.x <= max_value)]
+        dfs.append(df)
+    
+    
+    if multi: # TODO: remove if multi... and add a color list so first df is black
+        for df in dfs:
+            plt.plot(df.x, df.y, '.-', linewidth=1, ms=3, label=str(i))
+    else:
+        plt.plot(dfs[0].x, dfs[0].y, '.-', color='black', linewidth=1, ms=3, label=label)
     
 
 
@@ -109,7 +128,6 @@ def plot_trans(x,y, multi=False, savefig=False, label=None, x_max=None):
 
 
     """Figure formatting"""
-    max_value = np.array(x).flatten().max()
     
     plt.gca().set_xscale('log')
     #plt.gca().set_xticks([1, 10]) # Michiel uses this range for ARIEL retrieval challenge
