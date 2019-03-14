@@ -34,7 +34,7 @@ images = images[:500000] # select first ... images
 use_saved_weights = True
 
 g_iters = 1 # 5
-d_iters = 2 # 1, discriminator is called critic in WGAN paper
+d_iters = 4 # 1, discriminator is called critic in WGAN paper
 
 
 
