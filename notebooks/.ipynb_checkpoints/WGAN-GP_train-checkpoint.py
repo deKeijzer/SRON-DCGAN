@@ -3,6 +3,7 @@ import random
 import numpy as np
 import time as t
 
+import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import gradcheck
@@ -12,7 +13,7 @@ import time as time
 from torch import autograd
 
 import model
-from keijzer_exogan import *
+import keijzer_exogan as ke
 
 # initialize random seeds
 manualSeed = 999
@@ -27,14 +28,15 @@ selected_gpus = [0,1,2] # Selected GPUs
 
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
+print('Loading data...')
 images = np.load(path+'first_chunks_25_percent_images_v2.npy').astype('float32')
 
-images = images[:500000] # select first ... images
+images = images[:10000] # select first ... images
 
 use_saved_weights = True
 
 g_iters = 1 # 5
-d_iters = 4 # 1, discriminator is called critic in WGAN paper
+d_iters = 2 # 1, discriminator is called critic in WGAN paper
 
 
 
@@ -72,7 +74,7 @@ if shuffle:
 
 print('Number of images: ', len(images))
 
-dataset = numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
+dataset = ke.numpy_dataset(data=images, to_vram=True) # to_vram pins it to all GPU's
 
 # Create the dataloader
 dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
@@ -82,6 +84,7 @@ dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
 """
 Load and setup models
 """
+print('Initializing cuda...')
 # Initialize cuda
 device = torch.device("cuda:"+str(selected_gpus[0]) if (torch.cuda.is_available() and ngpu > 0) else "cpu")
 
@@ -106,8 +109,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v2', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_v2', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v3_test', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_v3_test', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -200,10 +203,43 @@ for epoch in range(num_epochs):
             # Additional loss terms
             mean_L = MSELoss(netG(noise).mean(), real_mean)*100 # 3
             std_L = MSELoss(netG(noise).std(), real_std)*100 # 3
-            #mean_L = 0
-            #std_L = 0
             
-            g_cost = netD(fake).mean()  - mean_L - std_L # mines mean and std loss, because those should get low, not high like netD(fake)
+            """Calculate param losses"""
+            # create an 32x32 array with the mean value per pixel of the complete batch, so [64,1,32,32] with mean over axis 0 becomes [1,1,32,32]
+            aspa_to_decode = fake.mean(0).reshape([32,32]).detach().cpu().numpy() 
+            #print('aspa shape: ', aspa_to_decode.shape)
+            params_dict = ke.decode_params_from_aspa(aspa_to_decode) # How does this handle batches?
+            
+            # in order Mp, Tp, CH4, Pr, H2O, CO2, CO
+            Mj = 1.898e27 # jupiter mass in kg
+            Rj = 69.911e3 # jupiter radius in m
+            
+            # 20% out of bounds (ExoGAN), just to stay safe
+            param_ranges_min_values = [0.8*Mj, 1e3, 1e-8, 0.8*Rj, 1e-8, 1e-8, 1e-8] # lower bounds
+            param_ranges_min_values = [param*0.8 for param in param_ranges_min_values] # go 20% lower, to be safe
+            
+            param_ranges_max_values = [2.0*Mj, 2e3, 1e-1, 1.5*Rj, 2e3, 2e3, 2e3]
+            param_ranges_max_values = [param*1.2 for param in param_ranges_max_values]
+            
+            param_losses = []
+            for j,param in enumerate(params_dict.keys()):
+                value = torch.tensor(params_dict[param]) # value of generated param
+                min_val = torch.tensor(param_ranges_min_values[j])
+                max_val = torch.tensor(param_ranges_max_values[j])
+                
+                # if value is outside of set bounds
+                if (value < min_val): 
+                    param_loss = MSELoss(value, min_val)
+                elif (value > max_val):
+                    param_loss = MSELoss(value, max_val)
+                else:
+                    param_loss = 0
+                param_losses.append(param_loss)
+            
+            param_losses = torch.tensor(param_losses).sum()*1e-15
+            
+            """ end of calculating additional losses"""
+            g_cost = netD(fake).mean()  - mean_L - std_L - param_losses # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
@@ -254,17 +290,17 @@ for epoch in range(num_epochs):
         if (iters % 100 == 0): # save weights every % .... iters
             #print('weights saved')
             if ngpu > 1:
-                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v2')
-                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v2')
+                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v3_test')
+                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v3_test')
             else:
-                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v2')
-                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v2')
+                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v3_test')
+                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v3_test')
             
         
         if i % (16) == 0:
             t2 = time.time()
-            print('[%d/%d][%d/%d] \t Total loss = %.3f \t d_cost = %.3f \t g_cost = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f'% 
-                      (epoch, num_epochs, i, len(dataloader), L, d_cost, g_cost, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1)))
+            print('[%d/%d][%d/%d] \t Total loss = %.3f \t d_cost = %.3f \t g_cost = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f \t param_losses: %.3f'% 
+                      (epoch, num_epochs, i, len(dataloader), L, d_cost, g_cost, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1), param_losses ))
             t1 = time.time()
             
         """Progress saver"""
@@ -277,7 +313,7 @@ for epoch in range(num_epochs):
             variables_to_save = [arr_d_fake, arr_d_real]
             
             for z,variable in enumerate(variables_to_save):
-                save_progress('v2', variable_names[z], variable)
+                save_progress('v3_test', variable_names[z], variable)
             
             arr_d_fake = []
             arr_d_real = []

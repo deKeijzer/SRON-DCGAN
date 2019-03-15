@@ -160,7 +160,7 @@ def scale_param(X, X_min, X_max):
     In this case 1 is max, 0 is min
     """
     std = (X-X_min)/ (X_max - X_min)
-    return std*(1 - 0)+0
+    return std*(1 - -1)+-1
 
 
 def inverse_scale(X_, X_min, X_max):
@@ -242,7 +242,7 @@ def ASPA_v3(x, wavelengths, max_wavelength=16):
     """
     Normalize bins
     """
-    scalers = [MinMaxScaler(feature_range=(0,1)).fit(b) for b in bins] # list of 8 scalers for the 8 bins
+    scalers = [MinMaxScaler(feature_range=(-1,1)).fit(b) for b in bins] # list of 8 scalers for the 8 bins
     mins = [ b.iloc[:,1].min() for b in bins] # .iloc[:,1] selects the R/R (y) only
     maxs = [ b.iloc[:,1].max() for b in bins]
     stds = [ b.iloc[:,1].std() for b in bins]
