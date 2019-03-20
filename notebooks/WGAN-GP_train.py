@@ -29,9 +29,9 @@ selected_gpus = [0,1,2] # Selected GPUs
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
 print('Loading data...')
-images = np.load(path+'first_chunks_25_percent_images_v2.npy').astype('float32')
+images = np.load(path+'first_chunks_25_percent_images_v3.npy').astype('float32')
 
-images = images[:10000] # select first ... images
+images = images[:1000000] # select first ... images
 
 use_saved_weights = True
 
@@ -205,6 +205,7 @@ for epoch in range(num_epochs):
             std_L = MSELoss(netG(noise).std(), real_std)*100 # 3
             
             """Calculate param losses"""
+            """
             # create an 32x32 array with the mean value per pixel of the complete batch, so [64,1,32,32] with mean over axis 0 becomes [1,1,32,32]
             aspa_to_decode = fake.mean(0).reshape([32,32]).detach().cpu().numpy() 
             #print('aspa shape: ', aspa_to_decode.shape)
@@ -237,9 +238,10 @@ for epoch in range(num_epochs):
                 param_losses.append(param_loss)
             
             param_losses = torch.tensor(param_losses).sum()*1e-15
-            
+            """
+            param_losses = 0
             """ end of calculating additional losses"""
-            g_cost = netD(fake).mean()  - mean_L - std_L - param_losses # mines mean and std loss, because those should get low, not high like netD(fake)
+            g_cost = netD(fake).mean()  - mean_L - std_L # - param_losses # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
