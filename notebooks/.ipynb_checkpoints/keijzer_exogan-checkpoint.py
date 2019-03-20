@@ -400,6 +400,152 @@ def decode_spectrum_from_aspa(aspa, max_wavelength=16):
     return x, y
 
 
+def ASPA_v4(x, wavelengths, max_wavelength=16):
+    """
+    x: dict 
+    y: ?
+    max_wavelength: max wavelength in micron to decode in aspa
+    
+    returns: 1x32x32 ndarray
+    """
+    
+    #print('='*100)
+    x = copy.deepcopy(x)
+    wavelengths = wavelengths.copy()
+    
+    spectrum = x['data']['spectrum']
+    #print('Original spectrum length: ', len(spectrum))
+    spectrum = np.expand_dims(spectrum, axis=1) # change shape from (515,) to (515,1)
+    params = x['param']
+
+    for param in params:
+        #print('Param: ', param)
+        if 'mixratio' in param: 
+            params[param] = np.log(np.abs(params[param])) # transform mixratio's because they are generated on logarithmic scale
+    
+    """
+    Normalize params
+    """
+    # Min max values from training set, in the same order as params above: planet mass, temp, .... co mixratio.
+    min_values = [1.518400e+27, 
+                  1.000000e+03, 
+                  -1.842068e+01, 
+                  5.592880e+07, 
+                  -1.842068e+01, 
+                  -1.842068e+01, 
+                  -1.842068e+01]
+    
+    max_values = [3.796000e+27, 
+                  2.000000e+03, 
+                  -2.302585e+00, 
+                  1.048665e+08, 
+                  -2.302585e+00, 
+                  -2.302585e+00,
+                  -2.302585e+00]
+
+    for i,param in enumerate(params):
+        params[param] = scale_param(params[param], min_values[i], max_values[i])
+        #print('%s: %s' % (param, params[param]))
+        
+    #print('-'*5)
+    """
+    Select bins
+    """
+    data = np.concatenate([wavelengths,spectrum], axis=1)
+    #print('Original data length: ', len(data))
+    data = pd.DataFrame(data)
+    data.columns = ['x', 'y'] # x is wavelength, y is (R_p / R_s)^2
+    data = data.loc[data['x'] <= 16] # select only wavelengths <= 16
+    
+    # Could loop this, but right now this is more visual
+    # H2O bins
+    bin1 = data[data.x <= 0.44]
+    bin2 = data[(data.x > 0.44) & (data.x <= 0.495)]
+    bin3 = data[(data.x > 0.495) & (data.x <= 0.535)]
+    bin4 = data[(data.x > 0.535) & (data.x <= 0.58)]
+    bin5 = data[(data.x > 0.58) & (data.x <= 0.635)]
+    bin6 = data[(data.x > 0.635) & (data.x <= 0.71)]
+    bin7 = data[(data.x > 0.71) & (data.x <= 0.79)]
+    bin8 = data[(data.x > 0.79) & (data.x <= 0.9)]
+    bin9 = data[(data.x > 0.9) & (data.x <= 1.08)]
+    bin10 = data[(data.x > 1.08) & (data.x <= 1.3)]
+    bin11 = data[(data.x > 1.3) & (data.x <= 1.7)]
+    bin12 = data[(data.x > 1.7) & (data.x <= 2.35)]
+    
+    # Manually chosen bins
+    bin13 = data[(data.x > 2.35) & (data.x <= 4)]
+    bin14 = data[(data.x > 4) & (data.x <= 6)]
+    bin15 = data[(data.x > 6) & (data.x <= 10)]
+    bin16 = data[(data.x > 10) & (data.x <= 14)]
+    bin17 = data[data.x > 14]
+
+    bins = [bin17, bin16, bin15, bin14, bin13, bin12, bin11, bin10, bin9, bin8, bin7, bin6, bin5, bin4, bin3, bin2, bin1]
+    #print('Total bins length: ', len(np.concatenate(bins)))
+    #for i,b in enumerate(bins):
+    #    print('Bin , shape: ',(len(bins)-i), b.values.shape)
+    
+    """
+    Normalize bins
+    """
+    scalers = [MinMaxScaler(feature_range=(-1,1)).fit(b) for b in bins] # list of 8 scalers for the 8 bins
+    mins = [ b.iloc[:,1].min() for b in bins] # .iloc[:,1] selects the R/R (y) only
+    maxs = [ b.iloc[:,1].max() for b in bins]
+    stds = [ b.iloc[:,1].std() for b in bins]
+    #print(min(mins), max(maxs))
+    bins_scaled = []
+    for i,b in enumerate(bins):
+        bins_scaled.append(scalers[i].transform(b))
+        
+    spectrum_scaled = np.concatenate(bins_scaled, axis=0)
+    spectrum_scaled = spectrum_scaled[:,1]
+    #print('spectrum scaled shape: ', spectrum_scaled.shape)
+    
+    """
+    Create the ASPA
+    """
+    
+    """Spectrum"""
+    aspa = np.zeros((32,32))
+
+    row_length = 25 # amount of pixels used per row
+    n_rows = math.ceil(len(spectrum_scaled) / row_length) # amount of rows the spectrum needs in the aspa, so for 415 data points, 415/32=12.96 -> 13 rows
+    #print('Using %s rows' % n_rows)
+
+    for i in range(n_rows): # for i in 
+
+        start = i*row_length
+        stop = start+row_length
+        spec = spectrum_scaled[start:stop]
+
+        if len(spec) != row_length:
+            n_missing_points = row_length-len(spec)
+            spec = np.append(spec, [0 for _ in range(n_missing_points)]) # for last row, if length != 32, fill remaining with 0's
+            #print('Filled row with %s points' % n_missing_points)
+
+        aspa[i, :row_length] = spec
+        
+    """ExoGAN params"""
+    for i,param in enumerate(params):
+        aspa[:16, 25+i:26+i] = params[param]
+        
+    """min max std values for spectrum bins"""
+    for i in range(len(mins)):
+        min_ = scale_param(mins[i], 0.00648 , 0.02877)
+        max_ = scale_param(maxs[i], 0.00648 , 0.02877)
+        #std_ = scale_param(stds[i], 9e-6, 2e-4)
+        
+        #min_ = mins[i]
+        #max_ = maxs[i]
+        
+        aspa[16:17, i*2:i*2+2] = min_
+        aspa[17:18, i*2:i*2+2] = max_
+            
+    """Fill unused space with noice"""
+    for i in range(14):
+        noise = np.random.rand(32) # random noise betweem 0 and 1 for each row
+        aspa[18+i:19+i*1, :] = noise
+        
+    return aspa
 
 
 
