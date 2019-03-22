@@ -29,7 +29,7 @@ selected_gpus = [0,1,2] # Selected GPUs
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
 print('Loading data...')
-images = np.load(path+'first_chunks_25_percent_images_v3.npy').astype('float32')
+images = np.load(path+'first_chunks_25_percent_images_v4.npy').astype('float32')
 
 images = images[:1000000] # select first ... images
 
@@ -109,8 +109,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v3_test', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
-        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_v3_test', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v4_test', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_v4_test', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -292,11 +292,11 @@ for epoch in range(num_epochs):
         if (iters % 100 == 0): # save weights every % .... iters
             #print('weights saved')
             if ngpu > 1:
-                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v3_test')
-                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v3_test')
+                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test')
+                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test')
             else:
-                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v3_test')
-                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v3_test')
+                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test')
+                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test')
             
         
         if i % (16) == 0:
@@ -315,7 +315,7 @@ for epoch in range(num_epochs):
             variables_to_save = [arr_d_fake, arr_d_real]
             
             for z,variable in enumerate(variables_to_save):
-                save_progress('v3_test', variable_names[z], variable)
+                save_progress('v4_test', variable_names[z], variable)
             
             arr_d_fake = []
             arr_d_real = []
