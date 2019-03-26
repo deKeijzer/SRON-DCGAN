@@ -346,8 +346,8 @@ def decode_params_from_aspa(aspa):
         params_dict[param] = inverse_scale(params[i], min_values[i], max_values[i])
 
         # scale mixratios from log back to linear
-        if 'mixratio' in param: 
-            params_dict[param] = np.exp(params_dict[param])
+        #if 'mixratio' in param: 
+            #params_dict[param] = np.exp(params_dict[param])
             #print(param, params_dict[param])
         
     return params_dict
