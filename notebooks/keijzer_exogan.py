@@ -403,8 +403,7 @@ def decode_spectrum_from_aspa(aspa, max_wavelength=16):
 def ASPA_v4(x, wavelengths, max_wavelength=16):
     """
     x: dict 
-    y: ?
-    max_wavelength: max wavelength in micron to decode in aspa
+    max_wavelength: max wavelength in micron to decode to aspa
     
     returns: 1x32x32 ndarray
     """
@@ -421,7 +420,7 @@ def ASPA_v4(x, wavelengths, max_wavelength=16):
     for param in params:
         #print('Param: ', param)
         if 'mixratio' in param: 
-            params[param] = np.log(np.abs(params[param])) # transform mixratio's because they are generated on logarithmic scale
+            params[param] = np.log10(params[param]) # transform mixratio's to dex because they are generated on logarithmic scale
     
     """
     Normalize params
@@ -429,19 +428,19 @@ def ASPA_v4(x, wavelengths, max_wavelength=16):
     # Min max values from training set, in the same order as params above: planet mass, temp, .... co mixratio.
     min_values = [1.518400e+27, 
                   1.000000e+03, 
-                  -1.842068e+01, 
+                  -8, 
                   5.592880e+07, 
-                  -1.842068e+01, 
-                  -1.842068e+01, 
-                  -1.842068e+01]
+                  -8, 
+                  -8, 
+                  -8]
     
     max_values = [3.796000e+27, 
                   2.000000e+03, 
-                  -2.302585e+00, 
+                  -1, 
                   1.048665e+08, 
-                  -2.302585e+00, 
-                  -2.302585e+00,
-                  -2.302585e+00]
+                  -1, 
+                  -1,
+                  -1]
 
     for i,param in enumerate(params):
         params[param] = scale_param(params[param], min_values[i], max_values[i])

@@ -29,7 +29,7 @@ selected_gpus = [0,1,2] # Selected GPUs
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
 print('Loading data...')
-images = np.load(path+'first_chunks_25_percent_images_v4.npy').astype('float32')
+images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32')
 
 images = images[:1000000] # select first ... images
 
