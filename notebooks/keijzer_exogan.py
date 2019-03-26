@@ -311,20 +311,20 @@ def decode_params_from_aspa(aspa):
     """Decode to arrays"""
     # min max values for params used to decode
     min_values = [1.518400e+27, 
-                      1.000000e+03, 
-                      -1.842068e+01, 
-                      5.592880e+07, 
-                      -1.842068e+01, 
-                      -1.842068e+01, 
-                      -1.842068e+01]
-
+                  1.000000e+03, 
+                  -8, 
+                  5.592880e+07, 
+                  -8, 
+                  -8, 
+                  -8]
+    
     max_values = [3.796000e+27, 
-                      2.000000e+03, 
-                      -2.302585e+00, 
-                      1.048665e+08, 
-                      -2.302585e+00, 
-                      -2.302585e+00,
-                      -2.302585e+00]
+                  2.000000e+03, 
+                  -1, 
+                  1.048665e+08, 
+                  -1, 
+                  -1,
+                  -1]
 
     # Initialize dict to be used for the param values
     params_dict = {
