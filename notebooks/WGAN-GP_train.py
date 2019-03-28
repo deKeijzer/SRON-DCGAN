@@ -201,8 +201,11 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            mean_L = MSELoss(netG(noise).mean(), real_mean)*100 # 3
-            std_L = MSELoss(netG(noise).std(), real_std)*100 # 3
+            #mean_L = MSELoss(netG(noise).mean(), real_mean)*100 # 3
+            #std_L = MSELoss(netG(noise).std(), real_std)*100 # 3
+            
+            mean_L = 0
+            std_L = 0
             
             """Calculate param losses"""
             """
@@ -241,7 +244,7 @@ for epoch in range(num_epochs):
             """
             param_losses = 0
             """ end of calculating additional losses"""
-            g_cost = netD(fake).mean()  - mean_L - std_L # - param_losses # mines mean and std loss, because those should get low, not high like netD(fake)
+            g_cost = netD(fake).mean() #  - mean_L - std_L # - param_losses # mines mean and std loss, because those should get low, not high like netD(fake)
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
