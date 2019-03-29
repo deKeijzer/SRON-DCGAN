@@ -158,10 +158,13 @@ def calc_gradient_penalty(netD, real_data, fake_data, b_size):
 
 def save_progress(experiment_name, variable_name, progress_list):
     path = 'gan_data//training_progress//'
-    progress_list = np.array(progress_list)
-    file = open(path+variable_name+"_"+experiment_name+'.txt', mode="a")
-    np.savetxt(file, progress_list)
-    file.close()
+    progress_list = np.array(progress_list).astype('float32')
+    #file = open(path+variable_name+"_"+experiment_name+'.npy', mode="a")
+    file_name = path+variable_name+"_"+experiment_name+'.npy'
+    file = np.load(file_name, mmap_mode='r+')
+    file = np.append(file, progress_list)
+    np.save(file_name, file)
+    #file.close()
 
 
 """
