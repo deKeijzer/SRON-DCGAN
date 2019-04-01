@@ -24,7 +24,7 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-selected_gpus = [0,1,2] # Selected GPUs
+selected_gpus = [0,1] # Selected GPUs
 
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
