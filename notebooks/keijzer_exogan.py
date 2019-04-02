@@ -159,16 +159,21 @@ def scale_param(X, X_min, X_max):
     
     In this case 1 is max, 0 is min
     """
-    std = (X-X_min)/ (X_max - X_min)
-    return std*(1 - -1)+-1
+    sigma = (X-X_min) / (X_max - X_min)
+    return sigma*(1 - -1)+-1
 
 
 def inverse_scale(X_, X_min, X_max):
     """
-    X_ is scaled X
-    X is unscaled X_
+    X_ is scaled
+    X is unscaled
     """
+    # with min=0, max=1
+    #sigma = X_ 
     X = X_ * (X_max - X_min) + X_min
+    
+    #with min=-1, max=1
+    X = (1/2)*(X_+1)*(X_max-X_min)+X_min 
     return X
 
 
@@ -359,36 +364,51 @@ def decode_spectrum_from_aspa(aspa, max_wavelength=16):
     It's currently hard coded to work with 
     
     """
-    mins_ = [aspa[16:17, i*4:i*4+4].mean() for i in range(8)]
-    maxs_ = [aspa[18:19, i*4:i*4+4].mean() for i in range(8)]
+    spectrum = aspa[:16, :25].flatten()
+    
+    n_bins = 17
+    mins_ = [aspa[16:17, i*2:i*2+2].mean() for i in range(n_bins)]
+    maxs_ = [aspa[17:18, i*2:i*2+2].mean() for i in range(n_bins)]
 
 
     """min max std values for spectrum bins"""
     mins = [] # globally decoded values
     maxs = []
-    for i in range(8):
-        mins.append(inverse_scale(mins_[i], 0.005, 0.03))
-        maxs.append(inverse_scale(maxs_[i], 0.005, 0.03))
+    for i in range(n_bins):
+        mins.append(inverse_scale(mins_[i], 0.00648 , 0.02877))
+        maxs.append(inverse_scale(maxs_[i], 0.00648 , 0.02877))
 
 
     """Select bins"""
-    df = ke.load_wavelengths()
+    df = load_wavelengths()
 
     df.columns = ['x']
     df = df.loc[df['x'] <= max_wavelength] # select only wavelengths <= 16 (max wavelength ASPA has been encoded with)
     df['y'] = spectrum
 
     # Could loop this, but right now this is more visual
-    bin1 = df[df.x <= 0.8]
-    bin2 = df[(df.x > 0.8) & (df.x <= 1.3)] # select data between 2 and 4 micron
-    bin3 = df[(df.x > 1.3) & (df.x <= 2)]
-    bin4 = df[(df.x > 2) & (df.x <= 4)]
-    bin5 = df[(df.x > 4) & (df.x <= 6)]
-    bin6 = df[(df.x > 6) & (df.x <= 10)]
-    bin7 = df[(df.x > 10) & (df.x <= 14)]
-    bin8 = df[df.x > 14]
+    # H2O bins
+    bin1 = df[df.x <= 0.44]
+    bin2 = df[(df.x > 0.44) & (df.x <= 0.495)]
+    bin3 = df[(df.x > 0.495) & (df.x <= 0.535)]
+    bin4 = df[(df.x > 0.535) & (df.x <= 0.58)]
+    bin5 = df[(df.x > 0.58) & (df.x <= 0.635)]
+    bin6 = df[(df.x > 0.635) & (df.x <= 0.71)]
+    bin7 = df[(df.x > 0.71) & (df.x <= 0.79)]
+    bin8 = df[(df.x > 0.79) & (df.x <= 0.9)]
+    bin9 = df[(df.x > 0.9) & (df.x <= 1.08)]
+    bin10 = df[(df.x > 1.08) & (df.x <= 1.3)]
+    bin11 =df[(df.x > 1.3) & (df.x <= 1.7)]
+    bin12 = df[(df.x > 1.7) & (df.x <= 2.35)]
+    
+    # Manually chosen bins
+    bin13 = df[(df.x > 2.35) & (df.x <= 4)]
+    bin14 = df[(df.x > 4) & (df.x <= 6)]
+    bin15 = df[(df.x > 6) & (df.x <= 10)]
+    bin16 = df[(df.x > 10) & (df.x <= 14)]
+    bin17 = df[df.x > 14]
 
-    bins = [bin8, bin7, bin6, bin5, bin4, bin3, bin2, bin1]
+    bins = [bin17, bin16, bin15, bin14, bin13, bin12, bin11, bin10, bin9, bin8, bin7, bin6, bin5, bin4, bin3, bin2, bin1]
 
     """Inverse scale bins"""
     for i,b in enumerate(bins):
