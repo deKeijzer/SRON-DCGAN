@@ -31,7 +31,7 @@ path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/
 print('Loading data...')
 images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32')
 
-images = images[:1000000] # select first ... images
+#images = images[:1000000] # select first ... images
 
 use_saved_weights = True
 
