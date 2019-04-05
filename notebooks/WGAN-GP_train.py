@@ -12,7 +12,7 @@ import time as time
 
 from torch import autograd
 
-import model
+import model_v2_small as model
 import keijzer_exogan as ke
 
 # initialize random seeds
@@ -24,7 +24,7 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-selected_gpus = [0,1] # Selected GPUs
+selected_gpus = [0,1,2] # Selected GPUs
 
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
@@ -33,7 +33,7 @@ images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32
 
 #images = images[:1000000] # select first ... images
 
-use_saved_weights = True
+use_saved_weights = False
 
 g_iters = 1 # 5
 d_iters = 2 # 1, discriminator is called critic in WGAN paper
@@ -46,8 +46,8 @@ Local variables that generally stay unchanged
 batch_size = 64 # 64
 num_epochs = 10*10**3
 
-lrG = 1e-6
-lrD = 1e-6
+lrG = 1e-4
+lrD = 1e-4
 
 beta1 = 0.5 # beta1 for Adam
 beta2 = 0.9 # beta2 for Adam

@@ -33,10 +33,10 @@ images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32
 
 #images = images[:1000000] # select first ... images
 
-use_saved_weights = True
+use_saved_weights = False
 
 g_iters = 1 # 5
-d_iters = 5 # 1, discriminator is called critic in WGAN paper
+d_iters = 2 # 1, discriminator is called critic in WGAN paper
 
 
 
