@@ -68,6 +68,7 @@ class Generator(nn.Module):
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(ngf*1, nc, 4, 2, 1, bias=False),
             #nn.Tanh() # Not used because ASPAs 
+            nn.Sigmoid()
         )
 
     def forward(self, input):

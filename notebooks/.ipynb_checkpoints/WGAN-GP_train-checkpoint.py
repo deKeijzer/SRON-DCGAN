@@ -46,8 +46,8 @@ Local variables that generally stay unchanged
 batch_size = 64 # 64
 num_epochs = 10*10**3
 
-lrG = 1e-4
-lrD = 1e-4
+lrG = 1e-6
+lrD = 1e-6
 
 beta1 = 0.5 # beta1 for Adam
 beta2 = 0.9 # beta2 for Adam
@@ -57,7 +57,7 @@ lambda_ = 10 # Scale factor for gradient_penalty
 workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
 image_size = 32
 nz = 100 # size of latent vector
-torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
+torch.backends.cudnn.benchmark=True # Uses cudnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
 
 
 print('Batch size: ', batch_size)
@@ -181,10 +181,6 @@ for epoch in range(num_epochs):
     for i, data in enumerate(dataloader, 0):
         
         real = data.to(device)
-        #real[:, :, 19:, :] = 0.45 # set noise equal to 0.45
-
-        #plt.imshow(real[0, 0, :, :].detach().cpu())
-        #plt.show()
         b_size = real.size(0)
         
         """
@@ -194,8 +190,8 @@ for epoch in range(num_epochs):
             p.requires_grad_(False)
         
         # Calculate batch mean & std values, instead of using the mean/std of the complete train set.
-        real_mean = real.mean()
-        real_std = real.std()
+        #real_mean = real.mean()
+        #real_std = real.std()
 
         for _ in range(g_iters):
             netG.zero_grad()
@@ -209,45 +205,8 @@ for epoch in range(num_epochs):
             
             mean_L = 0
             std_L = 0
-            
-            """Calculate param losses"""
-            """
-            # create an 32x32 array with the mean value per pixel of the complete batch, so [64,1,32,32] with mean over axis 0 becomes [1,1,32,32]
-            aspa_to_decode = fake.mean(0).reshape([32,32]).detach().cpu().numpy() 
-            #print('aspa shape: ', aspa_to_decode.shape)
-            params_dict = ke.decode_params_from_aspa(aspa_to_decode) # How does this handle batches?
-            
-            # in order Mp, Tp, CH4, Pr, H2O, CO2, CO
-            Mj = 1.898e27 # jupiter mass in kg
-            Rj = 69.911e3 # jupiter radius in m
-            
-            # 20% out of bounds (ExoGAN), just to stay safe
-            param_ranges_min_values = [0.8*Mj, 1e3, 1e-8, 0.8*Rj, 1e-8, 1e-8, 1e-8] # lower bounds
-            param_ranges_min_values = [param*0.8 for param in param_ranges_min_values] # go 20% lower, to be safe
-            
-            param_ranges_max_values = [2.0*Mj, 2e3, 1e-1, 1.5*Rj, 2e3, 2e3, 2e3]
-            param_ranges_max_values = [param*1.2 for param in param_ranges_max_values]
-            
-            param_losses = []
-            for j,param in enumerate(params_dict.keys()):
-                value = torch.tensor(params_dict[param]) # value of generated param
-                min_val = torch.tensor(param_ranges_min_values[j])
-                max_val = torch.tensor(param_ranges_max_values[j])
-                
-                # if value is outside of set bounds
-                if (value < min_val): 
-                    param_loss = MSELoss(value, min_val)
-                elif (value > max_val):
-                    param_loss = MSELoss(value, max_val)
-                else:
-                    param_loss = 0
-                param_losses.append(param_loss)
-            
-            param_losses = torch.tensor(param_losses).sum()*1e-15
-            """
-            param_losses = 0
-            """ end of calculating additional losses"""
-            g_cost = netD(fake).mean() #  - mean_L - std_L # - param_losses # mines mean and std loss, because those should get low, not high like netD(fake)
+
+            g_cost = netD(fake).mean() # - mean_L - std_L
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
@@ -276,7 +235,6 @@ for epoch in range(num_epochs):
             # train with fake data
             d_fake = netD(fake).mean()
 
-            # train with interpolates data
             gradient_penalty = calc_gradient_penalty(netD, real, fake, b_size)
 
             # final disc cost
@@ -289,7 +247,9 @@ for epoch in range(num_epochs):
             w_dist = d_fake  - d_real # wasserstein distance
             L = d_cost + g_cost
             
-        
+        """
+        End of training
+        """
         
         """
         Save weights and print statistics
@@ -298,17 +258,17 @@ for epoch in range(num_epochs):
         if (iters % 100 == 0): # save weights every % .... iters
             #print('weights saved')
             if ngpu > 1:
-                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test')
-                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test')
+                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test_wgan')
+                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test_wgan')
             else:
-                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test')
-                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test')
+                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test_wgan')
+                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test_wgan')
             
         
         if i % (16) == 0:
             t2 = time.time()
-            print('[%d/%d][%d/%d] \t Total loss = %.3f \t d_cost = %.3f \t g_cost = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f \t param_losses: %.3f'% 
-                      (epoch, num_epochs, i, len(dataloader), L, d_cost, g_cost, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1), param_losses ))
+            print('[%d/%d][%d/%d] \t Total loss = %.3f \t d_cost = %.3f \t g_cost = %.3f \t Gradient pen. = %.3f \t D(G(z)) = %.3f \t D(x) = %.3f \t mu L: %.3f \t std L: %.3f \t t = %.3f \t w_dist: %.3f'% 
+                      (epoch, num_epochs, i, len(dataloader), L, d_cost, g_cost, gradient_penalty, d_fake, d_real, mean_L, std_L, (t2-t1), w_dist ))
             t1 = time.time()
             
         """Progress saver"""
@@ -321,7 +281,7 @@ for epoch in range(num_epochs):
             variables_to_save = [arr_d_fake, arr_d_real]
             
             for z,variable in enumerate(variables_to_save):
-                save_progress('v4_test', variable_names[z], variable)
+                save_progress('v4_test_wgan', variable_names[z], variable)
             
             arr_d_fake = []
             arr_d_real = []
