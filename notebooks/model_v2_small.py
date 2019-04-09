@@ -36,7 +36,7 @@ class Generator(nn.Module):
         self.main = nn.Sequential(
             
             #1
-            # input is Z, going into a convolution
+            # input is Z (100,1,1), going into a convolution
             nn.ConvTranspose2d( nz, ngf * 16, 4, 1, 0, bias=False),
             nn.LeakyReLU(0.2, inplace=True), # Should use ReLU in generator according to DCGAN paper,
             #nn.Dropout2d(0.5),
@@ -55,7 +55,7 @@ class Generator(nn.Module):
             
             # G(z)
             nn.ConvTranspose2d( ngf * 4, nc, 4, 2, 1, bias=False),
-            #nn.Tanh() # Not used because ASPAs 
+            nn.Tanh() # Not used because ASPAs 
         )
 
     def forward(self, input):
