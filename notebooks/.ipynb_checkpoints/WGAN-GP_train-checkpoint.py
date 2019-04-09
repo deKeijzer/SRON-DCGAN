@@ -12,7 +12,7 @@ import time as time
 
 from torch import autograd
 
-import model_v2_small as model
+import model_v3_small as model
 import keijzer_exogan as ke
 
 # initialize random seeds
@@ -33,7 +33,7 @@ images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32
 
 #images = images[:1000000] # select first ... images
 
-use_saved_weights = False
+use_saved_weights = True
 
 g_iters = 1 # 5
 d_iters = 2 # 1, discriminator is called critic in WGAN paper
@@ -106,15 +106,17 @@ def weights_init(m):
 netG.apply(weights_init) # It's not clean/efficient to load these ones first, but it works.
 netD.apply(weights_init)
 
+
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v4_test', map_location=device)) #net.module..load_... for parallel model , net.load_... for single gpu model
+        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v4_test', map_location=device))
         netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_v4_test', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
         pass
+
 
 # Handle multi-gpu if desired
 if (device.type == 'cuda') and (ngpu > 1):
@@ -258,11 +260,11 @@ for epoch in range(num_epochs):
         if (iters % 100 == 0): # save weights every % .... iters
             #print('weights saved')
             if ngpu > 1:
-                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test_wgan')
-                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test_wgan')
+                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_state_dict_wgan_model_v3_small')
+                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_state_dict0_wgan_model_v3_small')
             else:
-                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict0_v4_test_wgan')
-                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_v4_test_wgan')
+                torch.save(netG.state_dict(), 'gan_data//weights//netG_state_dict_wgan_model_v3_small')
+                torch.save(netD.state_dict(), 'gan_data//weights//netD_state_dict0_wgan_model_v3_small')
             
         
         if i % (16) == 0:

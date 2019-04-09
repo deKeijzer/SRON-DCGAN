@@ -52,7 +52,7 @@ class Generator(nn.Module):
             
             # G(z)
             nn.ConvTranspose2d( ngf * 4, nc, 4, 2, 1, bias=False),
-            #nn.Tanh() # Not used because ASPAs 
+            nn.Tanh() # Not used because ASPAs 
         )
 
     def forward(self, input):
