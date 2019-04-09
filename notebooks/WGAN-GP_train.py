@@ -110,8 +110,8 @@ netD.apply(weights_init)
 if use_saved_weights:
     try:
         # Load saved weights
-        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict0_v4_test', map_location=device))
-        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict0_v4_test', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_state_dict_wgan_model_v3_small', map_location=device))
+        netD.load_state_dict(torch.load('gan_data//weights//netD_state_dict_wgan_model_v3_small', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
