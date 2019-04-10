@@ -24,7 +24,7 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-selected_gpus = [0,1,2,3] # Selected GPUs
+selected_gpus = [0,1] # Selected GPUs
 
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
@@ -33,10 +33,10 @@ images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32
 
 #images = images[:1000000] # select first ... images
 
-use_saved_weights = True
+use_saved_weights = False
 
 g_iters = 1 # 5
-d_iters = 2 # 1, discriminator is called critic in WGAN paper
+d_iters = 5 # 1, discriminator is called critic in WGAN paper
 
 
 
@@ -208,7 +208,7 @@ for epoch in range(num_epochs):
             mean_L = 0
             std_L = 0
 
-            g_cost = netD(fake).mean() # - mean_L - std_L
+            g_cost = netD(fake).mean()  - mean_L - std_L
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
