@@ -72,23 +72,23 @@ class Discriminator(nn.Module):
         self.main = nn.Sequential(
             #1
             # input is 1 x 32 x 32
-            nn.Conv2d(nc, ndf*2, 4, 2, 1, bias=False), # in channels, out channels, kernel size, stride, padding
+            nn.Conv2d(nc, ndf*1, 4, 2, 1, bias=False), # in channels, out channels, kernel size, stride, padding
             nn.LeakyReLU(0.2, inplace=True),
             
             #2
-            nn.Conv2d(ndf*2, ndf * 4, 4, 2, 1, bias=False),
+            nn.Conv2d(ndf*1, ndf * 2, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             
             #3
-            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.Conv2d(ndf * 2, ndf *4, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             
             #4
-            nn.Conv2d(ndf * 8, ndf * 16, 4, 2, 1, bias=False),
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
             nn.LeakyReLU(0.2, inplace=True),
             
             #6
-            nn.Conv2d(ndf * 16, 1, 2, 1, 0, bias=False),
+            nn.Conv2d(ndf * 8, 1, 2, 1, 0, bias=False),
             nn.Sigmoid()
         )
 
