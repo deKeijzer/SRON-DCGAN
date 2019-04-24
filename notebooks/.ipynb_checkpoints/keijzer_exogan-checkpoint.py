@@ -312,37 +312,42 @@ def decode_params_from_aspa(aspa):
     spectrum = aspa[:16, :25].flatten()
     params = [aspa[:16, 25+i:26+i].mean() for i in range(7)]
     
+    params_dict = decode_params_from_list(params)
+    
+    return params_dict
+
+def decode_params_from_list(params):
     
     """Decode to arrays"""
     # min max values for params used to decode
     min_values = [1.518400e+27, 
-                  1.000000e+03, 
-                  -8, 
-                  5.592880e+07, 
-                  -8, 
-                  -8, 
-                  -8]
-    
+                      1.000000e+03, 
+                      -8, 
+                      5.592880e+07, 
+                      -8, 
+                      -8, 
+                      -8]
+
     max_values = [3.796000e+27, 
-                  2.000000e+03, 
-                  -1, 
-                  1.048665e+08, 
-                  -1, 
-                  -1,
-                  -1]
+                      2.000000e+03, 
+                      -1, 
+                      1.048665e+08, 
+                      -1, 
+                      -1,
+                      -1]
 
     # Initialize dict to be used for the param values
     params_dict = {
-        'planet_mass': 0,
-        'temp_profile': 0,
-        'ch4_mixratio': 0,
-        'planet_radius': 0,
-        'h2o_mixratio': 0,
-        'co2_mixratio': 0,
-        'co_mixratio': 0
-    }
-    
-    
+            'planet_mass': 0,
+            'temp_profile': 0,
+            'ch4_mixratio': 0,
+            'planet_radius': 0,
+            'h2o_mixratio': 0,
+            'co2_mixratio': 0,
+            'co_mixratio': 0
+        }
+
+
     for i,param in enumerate(params_dict):
         # put aspa values in dict
         params_dict[param] = params[i]
@@ -354,7 +359,7 @@ def decode_params_from_aspa(aspa):
         #if 'mixratio' in param: 
             #params_dict[param] = np.exp(params_dict[param])
             #print(param, params_dict[param])
-        
+                
     return params_dict
 
 

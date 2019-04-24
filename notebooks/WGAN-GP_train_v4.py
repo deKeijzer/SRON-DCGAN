@@ -36,7 +36,7 @@ images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32
 use_saved_weights = False
 
 g_iters = 1 # 5
-d_iters = 2 # 1, discriminator is called critic in WGAN paper
+d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
 
@@ -46,8 +46,8 @@ Local variables that generally stay unchanged
 batch_size = 64 # 64
 num_epochs = 10*10**3
 
-lrG = 1e-4
-lrD = 1e-4
+lrG = 1e-3
+lrD = 1e-3
 
 beta1 = 0.5 # beta1 for Adam
 beta2 = 0.9 # beta2 for Adam
