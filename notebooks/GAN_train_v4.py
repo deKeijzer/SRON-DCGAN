@@ -24,18 +24,18 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-selected_gpus = [0,1] # Selected GPUs
+selected_gpus = [0] # Selected GPUs
 
 path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/test data
 
 print('Loading data...')
 images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32')
 
-#images = images[:1000000] # select first ... images
+images = images[:100000] # select first ... images
 
-use_saved_weights = True
+use_saved_weights = False
 
-g_iters = 5 # 5
+g_iters = 1 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
@@ -49,13 +49,13 @@ num_epochs = 10*10**3
 lrG = 1e-3
 lrD = 1e-3
 
-beta1 = 0.5 # beta1 for Adam
-beta2 = 0.9 # beta2 for Adam
+beta1 = 0.9 # beta1 for Adam
+beta2 = 0.999 # beta2 for Adam
 
 lambda_ = 10 # Scale factor for gradient_penalty
 
 workers = 0 # Number of workers for dataloader, 0 when to_vram is enabled
-image_size = 32
+image_size = 64
 nz = 100 # size of latent vector
 torch.backends.cudnn.benchmark=True # Uses udnn auto-tuner to find the best algorithm to use for your hardware, speeds up training by almost 50%
 
@@ -98,7 +98,7 @@ netD = model.Discriminator(ngpu).to(device)
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
+        nn.init.normal_(m.weight.data, mean=0.0, std=0.02)
     elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
@@ -126,7 +126,7 @@ if (device.type == 'cuda') and (ngpu > 1):
 Define input training stuff (fancy this up)
 """
 # Setup Adam optimizers for both G and D
-optimizerD = optim.Adam(netD.parameters(), lr=lrD, betas=(beta1, beta2)) # should be sgd
+optimizerD = optim.Adam(netD.parameters(), lr=lrD ,betas=(beta1, beta2))# , betas=(beta1, beta2) # should be sgd
 optimizerG = optim.Adam(netG.parameters(), lr=lrG, betas=(beta1, beta2))
 
 def save_progress(experiment_name, variable_name, progress_list):
@@ -168,6 +168,7 @@ for epoch in range(num_epochs):
             p.requires_grad_(True)
 
         for _ in range(d_iters):
+            # train with real batch
             label = torch.full((b_size,), real_label, device=device)
             
             netD.zero_grad()
