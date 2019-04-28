@@ -37,33 +37,33 @@ class Generator(nn.Module):
             
             #1
             # input is the latent vector z 100x1x1
-            nn.ConvTranspose2d( nz, ngf * 8, 2, 1, 0, bias=False), # in channels, out channels, kernel size, stride, padding
-            #nn.LeakyReLU(0.2, inplace=True), # Should use ReLU in generator according to DCGAN paper,
-            nn.BatchNorm2d(ngf*8),
-            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d( nz, ngf * 4, 4, 1, 0, bias=False), # in channels, out channels, kernel size, stride, padding
+            nn.LeakyReLU(0.2, inplace=True), # Should use ReLU in generator according to DCGAN paper,
+            #nn.BatchNorm2d(ngf*8),
+            #nn.ReLU(inplace=True),
             
             #2
             # state size. (ngf*8) x 4 x 4
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
-            #nn.LeakyReLU(0.2, inplace=True),
-            nn.BatchNorm2d(ngf*4),
-            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d(ngf * 4, ngf * 8, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            #nn.BatchNorm2d(ngf*4),
+            #nn.ReLU(inplace=True),
             
             #3
             # state size. (ngf*4) x 8 x 8
-            nn.ConvTranspose2d( ngf * 4, ngf * 2, 4, 2, 1, bias=False),
-            #nn.LeakyReLU(0.2, inplace=True),
-            nn.BatchNorm2d(ngf*2),
-            nn.ReLU(inplace=True),
+            nn.ConvTranspose2d( ngf * 8, ngf * 16, 4, 2, 1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            #nn.BatchNorm2d(ngf*2),
+            #nn.ReLU(inplace=True),
             
             #4
-            nn.ConvTranspose2d( ngf * 2, ngf * 1, 4, 2, 1, bias=False),
+            #nn.ConvTranspose2d( ngf * 2, ngf * 4, 4, 2, 1, bias=False),
             #nn.LeakyReLU(0.2, inplace=True),
-            nn.BatchNorm2d(ngf*1),
-            nn.ReLU(inplace=True),
+            #nn.BatchNorm2d(ngf*1),
+            #nn.ReLU(inplace=True),
             
             # G(z)
-            nn.ConvTranspose2d( ngf * 1, nc, 4, 2, 1, bias=False),
+            nn.ConvTranspose2d( ngf * 16, nc, 4, 2, 1, bias=False),
             nn.Tanh() # Not used because ASPAs 
         )
 
@@ -80,26 +80,26 @@ class Discriminator(nn.Module):
         self.main = nn.Sequential(
             #1
             # input is 1 x 32 x 32
-            nn.Conv2d(nc, ndf*1, 4, 2, 1, bias=False), # in channels, out channels, kernel size, stride, padding
+            nn.Conv2d(nc, ndf*4, 4, 2, 1, bias=False), # in channels, out channels, kernel size, stride, padding
             nn.LeakyReLU(0.2, inplace=True),
             
             #2
-            nn.Conv2d(ndf*1, ndf *2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf*2),
+            nn.Conv2d(ndf*4, ndf *8, 4, 2, 1, bias=False),
+            #nn.BatchNorm2d(ndf*2),
             nn.LeakyReLU(0.2, inplace=True),
             
             #3
-            nn.Conv2d(ndf * 2, ndf *4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf*4),
+            nn.Conv2d(ndf *8, ndf *16, 4, 2, 1, bias=False),
+            #nn.BatchNorm2d(ndf*4),
             nn.LeakyReLU(0.2, inplace=True),
             
             #4
-            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf*8),
-            nn.LeakyReLU(0.2, inplace=True),
+            #nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            #nn.BatchNorm2d(ndf*8),
+            #nn.LeakyReLU(0.2, inplace=True),
             
             #6
-            nn.Conv2d(ndf * 8, 1, 2, 1, 0, bias=False),
+            nn.Conv2d(ndf * 16, nc, 4, 1, 0, bias=False), # 2 1 0
             nn.Sigmoid()
         )
 

@@ -31,7 +31,7 @@ path = '/datb/16011015/ExoGAN_data/selection//' # Storage location of the train/
 print('Loading data...')
 images = np.load(path+'first_chunks_25_percent_images_v4.1.npy').astype('float32')
 
-images = images[:100000] # select first ... images
+images = images[:1024] # select first ... images
 
 use_saved_weights = False
 
@@ -46,10 +46,10 @@ Local variables that generally stay unchanged
 batch_size = 64 # 64
 num_epochs = 10*10**3
 
-lrG = 1e-3
-lrD = 1e-3
+lrG = 1e-4
+lrD = 1e-4
 
-beta1 = 0.9 # beta1 for Adam
+beta1 = 0.5 # beta1 for Adam
 beta2 = 0.999 # beta2 for Adam
 
 lambda_ = 10 # Scale factor for gradient_penalty
@@ -98,7 +98,7 @@ netD = model.Discriminator(ngpu).to(device)
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
-        nn.init.normal_(m.weight.data, mean=0.0, std=0.02)
+        nn.init.normal_(m.weight.data, 0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
@@ -202,8 +202,8 @@ for epoch in range(num_epochs):
             p.requires_grad_(False)
         
         # Calculate batch mean & std values, instead of using the mean/std of the complete train set.
-        #real_mean = real.mean()
-        #real_std = real.std()
+        real_mean = real.mean()
+        real_std = real.std()
 
         for _ in range(g_iters):
             netG.zero_grad()
@@ -214,12 +214,13 @@ for epoch in range(num_epochs):
             
             output = netD(fake).view(-1)
             
-            #mean_L = MSELoss(output.mean(), real_mean)*1 # 3
-            #std_L = MSELoss(output.std(), real_std)*1 # 3
-            mean_L = 0
-            std_L = 0
+            mean_L = MSELoss(output.mean(), real_mean)*100 # 3
+            std_L = MSELoss(output.std(), real_std)*100 # 3
+            
+            #mean_L = 0
+            #std_L = 0
         
-            g_cost = criterion(output, label)# - mean_L - std_L
+            g_cost = criterion(output, label) - mean_L - std_L
             g_cost.backward()
             
             d_fake = output.mean().item()
