@@ -35,7 +35,7 @@ images = images[:100000] # select first ... images
 
 use_saved_weights = True
 
-g_iters = 2 # 5
+g_iters = 1 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
@@ -46,8 +46,8 @@ Local variables that generally stay unchanged
 batch_size = 64 # 64
 num_epochs = 10*10**3
 
-lrG = 2e-4
-lrD = 2e-4
+lrG = 1e-5 # 2e-4
+lrD = 1e-5
 
 beta1 = 0.5 # beta1 for Adam
 beta2 = 0.9 # beta2 for Adam

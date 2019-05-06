@@ -573,6 +573,297 @@ def ASPA_v4(x, wavelengths, max_wavelength=16):
 
 
 
+def match_arcis_to_exogan_lambda_values(trans):
+    """
+    trans: np.loadtxt() loaded trans file from ARCiS MakeAI
+    output: trans converted to dataframe that match the ExoGAN wavelengths up to 16 micron.
+    
+    Example:
+    exogan wavelengths: 0.30, 0.35. 0.40
+    trans wavelengths: 0.31, 0.32, 0.35, 0.39, 0.45
+    Then the output df would contain: 0.31, 0.35, 0.39
+    """
+    
+    """prepare exogan wavelengths"""
+    # load exogan wavelengths to match trans to
+    df = pd.read_csv('wavelengths_and_indices.csv', header=None, skiprows=[0], usecols=[1]) # load wavelengths
+    df.columns = ['x']
+    df = df.loc[df['x'] <= 16] # select only wavelengths <= 16
+    
+    # dfe for 'df exogan'
+    dfe = df.iloc[::-1] # flip rows
+    dfe = dfe.reset_index(drop=True) # reset index
+    
+    """prepare trans"""
+    x = trans[:, 0] # expected MakeAI ARCiS format
+    y = trans[:, 1]
+    
+    # dfa for 'df ARCiS'
+    dfa = pd.DataFrame([x,y]).T
+    dfa.columns = ['x', 'y']
+    
+    """Get the lambda values that are the closest match to exogan"""
+    closest_matches = []
+    for target in dfe['x']:
+        delta_previous = 99999
+        previous_point = 99999
+
+        for current_point in dfa['x']: # loop over all points in dfa
+            delta_current = np.abs(target-current_point) # the absolute difference between the target and selected point
+
+            if delta_current < delta_previous:
+                delta_previous = delta_current
+                previous_point = current_point
+
+            else:
+                closest_matches.append(previous_point)
+                break
+    
+    dfa_selection = dfa[dfa['x'].isin(closest_matches)] # grab the values from dfa that match closest_matches
+    
+    return dfa_selection
+
+
+
+def get_arcis_makeai_params(path_to_file):
+    """
+    Returns dict {'param':value}
+    """
+    params = np.genfromtxt(path_to_file, usecols=np.arange(0,3), skip_header=1, dtype='str')
+    params[:,2] = params[:,2]
+    params = params[:, [0,2]]
+    
+    params = dict(params)
+    
+    for key in params:
+        params[key] = float(params[key])
+    
+    return params
+
+
+def get_makeai_abundances(path_to_file):
+    """
+    Opens path_to_file and returns dict with abundances
+    path_to_file: 'contr_trans_ARIEL' file path
+    
+    """
+    
+    
+    # Open file, read raw data
+    with open(path_to_file) as file:
+        words = file.readlines()
+        abundances = words[:17]
+        
+    arr = np.char.split(abundances)
+    
+    # Put names & values in lists
+    ab_names = []
+    ab_values = []
+    for array in arr:
+        ab_names.append(array[1])
+        ab_values.append(array[-1])
+    
+    # Convert these lists to dict like exogan params
+    abundances = np.array([ab_names, ab_values])
+    
+    abundances = dict.fromkeys(ab_names, 0)
+    
+    for i,key in enumerate(abundances.keys()):
+        abundances[key] = float(ab_values[i])
+        
+    return abundances
+
+
+def ASPA_complex_v1(trans_file, params_file, ariels_file):
+    """
+    trans_file, params_file, ariels_file: file paths to respective arcis makeai files
+    
+    output: ndarray shape(32,32)
+    """
+    
+    """Get spectrum"""
+    trans = np.loadtxt(trans_file)
+    data = match_arcis_to_exogan_lambda_values(trans) # contains df.x and df.y (lambda and R/R)
+
+    """Get params"""
+    params = get_arcis_makeai_params(params_file)
+    abundances = get_makeai_abundances(ariels_file)
+
+    params = {**params, **abundances} # create one dict from params and abundances dicts, calling it params 
+
+    del params['Tform'] # delete this because it's only one value...
+
+    """Transform certain parameters from linear to log10 scale"""
+    # TO DO: Find out form Michiel what's been sampled in which way
+
+    to_log10 = ['H2O', 'CO2', 'CO', 'CH4', 'SO2', 'NH3', 'HCN', 'C2H2', 'C2H4', 'H2', 'He', 'Na', 'K', 'TiO', 'VO']
+    to_log = ['Dplanet', 'TeffP', 'fdry', 'fwet', 'cloud1:Sigmadot', 'cloud1:Kzz', 'f_dry', 'f_wet', 'P', ]
+
+    # convert scales
+    for key in to_log10:
+        params[key] = np.log10(params[key])
+
+    for key in to_log:
+        params[key] = np.log(params[key])
+
+    # make sure everything is a ndarray
+    for key in params.keys():
+        params[key] = np.array(params[key])
+
+    """seperate dict into exo dict and arcis dict"""
+    exo_param_names = ['Mp', 'T', 'CH4', 'Rp', 'H2O', 'CO2', 'CO']
+
+    exo = {key: params[key] for key in exo_param_names} # create dict with exo params
+
+    # create arcis params dict
+    arcis = copy.deepcopy(params)
+
+    for key in exo_param_names: # remove exo params so only arcis params are left
+        del arcis[key]
+
+
+    """normalization"""
+
+    """
+    exo params
+
+    in order: ''Mp', 'T', 'CH4', 'Rp', 'H2O', 'CO2', 'CO'
+    """
+
+    mins = [0.042567043,
+     162.714,
+     -9.601192269796735,
+     0.14990851,
+     -8.113734940970243,
+     -13.041149548320321,
+     -13.29362364416031]
+
+    maxs = [9.9972309,
+     2481.179,
+     -2.6158258611929663,
+     2.9987519,
+     -2.3853136577179876,
+     -4.269621531412357,
+     -2.599807511407424]
+
+    for i,key in enumerate(exo):
+        exo[key] = scale_param(exo[key], mins[i], maxs[i])
+
+    """
+    arcis params
+
+    in order: 'Dplanet', 'betaT', 'TeffP', 'fdry', 'fwet', 'cloud1:Sigmadot', 'cloud1:Kzz', 'Tform', 'f_dry', 'f_wet', 'COratio', 'metallicity', 'P', 'SO2', 'NH3', 'HCN', 'C2H2', 'C2H4', 'H2', 'He', 'Na', 'K', 'TiO', 'VO'
+    """
+
+    mins = np.array([-1.99982975,   0.1000388 ,   1.00126179,  -0.99978456,
+            -0.99937355, -18.99565657,   6.00145523,  -0.99978456,
+            -0.99937355,   0.05947539,  -0.37582021,  -2.14218522,
+           -33.71421773,  -9.68739956, -21.28433086, -31.69229008,
+           -21.57430279,  -0.39308147,  -0.95821268, -14.73306309,
+           -16.52432881, -18.10646016, -18.50182734])
+
+    maxs = np.array([-0.69903435,   0.2499561 ,   2.39778685,   0.99962839,
+             0.99885968, -11.00131038,   9.99344688,   0.99962839,
+             0.99885968,   1.1501613 ,   0.81627806,   1.76797172,
+            -7.95078198,  -3.9465374 ,  -4.73565449,  -4.37582107,
+            -7.20558167,  -0.06844043,  -0.83624248,  -4.53106219,
+            -5.74617756,  -6.01139646,  -7.22628667])
+
+    for i,key in enumerate(arcis):
+        arcis[key] = scale_param(arcis[key], mins[i], maxs[i])
+
+    """ Select spectrum bins """
+    # Could loop this, but right now this is more visual
+    # H2O bins
+    bin1 = data[data.x <= 0.44]
+    bin2 = data[(data.x > 0.44) & (data.x <= 0.495)]
+    bin3 = data[(data.x > 0.495) & (data.x <= 0.535)]
+    bin4 = data[(data.x > 0.535) & (data.x <= 0.58)]
+    bin5 = data[(data.x > 0.58) & (data.x <= 0.635)]
+    bin6 = data[(data.x > 0.635) & (data.x <= 0.71)]
+    bin7 = data[(data.x > 0.71) & (data.x <= 0.79)]
+    bin8 = data[(data.x > 0.79) & (data.x <= 0.9)]
+    bin9 = data[(data.x > 0.9) & (data.x <= 1.08)]
+    bin10 = data[(data.x > 1.08) & (data.x <= 1.3)]
+    bin11 = data[(data.x > 1.3) & (data.x <= 1.7)]
+    bin12 = data[(data.x > 1.7) & (data.x <= 2.35)]
+
+    # Manually chosen bins
+    bin13 = data[(data.x > 2.35) & (data.x <= 4)]
+    bin14 = data[(data.x > 4) & (data.x <= 6)]
+    bin15 = data[(data.x > 6) & (data.x <= 10)]
+    bin16 = data[(data.x > 10) & (data.x <= 14)]
+    bin17 = data[data.x > 14]
+
+    bins = [bin17, bin16, bin15, bin14, bin13, bin12, bin11, bin10, bin9, bin8, bin7, bin6, bin5, bin4, bin3, bin2, bin1]
+
+    """
+    Normalize bins
+    """
+    scalers = [MinMaxScaler(feature_range=(-1,1)).fit(b) for b in bins] # list of ... scalers for the ... bins
+    mins = [ b.iloc[:,1].min() for b in bins] # .iloc[:,1] selects all rows from column 1 (which is R/R)
+    maxs = [ b.iloc[:,1].max() for b in bins]
+
+    bins_scaled = []
+    for i,b in enumerate(bins):
+        bins_scaled.append(scalers[i].transform(b))
+
+    spectrum_scaled = np.concatenate(bins_scaled, axis=0)
+    spectrum_scaled = spectrum_scaled[:,1]
+
+    """Spectrum"""
+    aspa = np.zeros((32,32))
+
+    row_length = 25 # amount of pixels used per row
+    n_rows = math.ceil(len(spectrum_scaled) / row_length) # amount of rows the spectrum needs in the aspa, so for 415 data points, 415/32=12.96 -> 13 rows
+    #print('Using %s rows' % n_rows)
+
+    for i in range(n_rows): # for i in 
+        start = i*row_length
+        stop = start+row_length
+        spec = spectrum_scaled[start:stop]
+
+        if len(spec) != row_length:
+            n_missing_points = row_length-len(spec)
+            spec = np.append(spec, [0 for _ in range(n_missing_points)]) # for last row, if length != 32, fill remaining with 0's
+            #print('Filled row with %s points' % n_missing_points)
+
+        aspa[i, :row_length] = spec
+
+    """exo params"""
+    for i,key in enumerate(exo_param_names): # !!!!!! Need to grab the keys list which is in order, python <3.7 reorders the created dict
+        aspa[:16, 25+i:26+i] = exo[key]
+
+    """min max values for spectrum bins"""
+    for i in range(len(mins)):
+        min_ = scale_param(mins[i], 0.00024601534 , 0.1710588)
+        max_ = scale_param(maxs[i], 0.00024601534 , 0.1710588)
+
+        aspa[16:17, i*2:i*2+2] = min_
+        aspa[17:18, i*2:i*2+2] = max_
+
+
+
+
+
+
+    #"""Fill unused space with noice"""
+    #for i in range(14):
+    #    noise = np.random.rand(32) # random noise betweem 0 and 1 for each row
+    #    aspa[18+i:19+i*1, :] = noise
+
+    for i,key in enumerate(arcis.keys()):
+        value = arcis[key]
+        aspa[18:, i:i+1] = value
+
+    """Fill unused space with some params, just so there is structure to the unused space"""
+    for i,key in enumerate(arcis.keys()):
+        value = arcis[key]
+        aspa[18+i:19+i, 23:] = value
+    
+    return aspa
+
+
 
 class numpy_dataset(Dataset):
     def __init__(self, data, transform=None, to_vram=False):
