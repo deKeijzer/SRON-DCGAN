@@ -35,7 +35,7 @@ images = np.load(path+'MakeAI_train.npy').astype('float32')
 
 use_saved_weights = True
 
-g_iters = 1 # 5
+g_iters = 10 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
