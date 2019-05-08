@@ -24,7 +24,7 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-selected_gpus = [0,1,2] # Selected GPUs
+selected_gpus = [0,1] # Selected GPUs
 
 path = '/datb/16011015/MakeAI/ASPAs//' # Storage location of the train/test data
 
@@ -33,10 +33,11 @@ images = np.load(path+'MakeAI_train.npy').astype('float32')
 
 #images = images[:100000] # select first ... images
 
-use_saved_weights = True
+use_simple_weights = False
+use_saved_weights = True # overrides simple weights (if True)
 
-g_iters = 10 # 5
-d_iters = 1 # 1, discriminator is called critic in WGAN paper
+g_iters = 1 # 5
+d_iters = 5 # 1, discriminator is called critic in WGAN paper
 
 
 
@@ -44,10 +45,10 @@ d_iters = 1 # 1, discriminator is called critic in WGAN paper
 Local variables that generally stay unchanged
 """
 batch_size = 64 # 64
-num_epochs = 10*10**3
+num_epochs = 10*10**6
 
-lrG = 1e-5 # 2e-4
-lrD = 1e-5
+lrG = 2e-4 # 2e-4
+lrD = 2e-4
 
 beta1 = 0.5 # beta1 for Adam
 beta2 = 0.9 # beta2 for Adam
@@ -107,11 +108,21 @@ netG.apply(weights_init) # It's not clean/efficient to load these ones first, bu
 netD.apply(weights_init)
 
 
-if use_saved_weights:
+if use_simple_weights:
     try:
         # Load saved weights, 'netG_simple_1' to start from pretrained model
         netG.load_state_dict(torch.load('gan_data//weights//netG_simple_1', map_location=device))
         netD.load_state_dict(torch.load('gan_data//weights//netD_simple_1', map_location=device))
+        print('Succesfully loaded saved weights.')
+    except:
+        print('Could not load saved weights, using new ones.')
+        pass
+    
+if use_saved_weights:
+    try:
+        # Load saved weights, 'netG_simple_1' to start from pretrained model
+        netG.load_state_dict(torch.load('gan_data//weights//netG_complex_11', map_location=device))
+        netD.load_state_dict(torch.load('gan_data//weights//netD_complex_11', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -192,8 +203,8 @@ for epoch in range(num_epochs):
             p.requires_grad_(False)
         
         # Calculate batch mean & std values, instead of using the mean/std of the complete train set.
-        real_mean = real.mean()
-        real_std = real.std()
+        #real_mean = real.mean()
+        #real_std = real.std()
 
         for _ in range(g_iters):
             netG.zero_grad()
@@ -202,11 +213,11 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            mean_L = MSELoss(netG(noise).mean(), real_mean)*100 # 3
-            std_L = MSELoss(netG(noise).std(), real_std)*100 # 3
+            #mean_L = MSELoss(netG(noise).mean(), real_mean)*1 # 3
+            #std_L = MSELoss(netG(noise).std(), real_std)*1 # 3
             
-            #mean_L = 0
-            #std_L = 0
+            mean_L = 0
+            std_L = 0
 
             g_cost = netD(fake).mean()  - mean_L - std_L
             g_cost.backward(mone)
@@ -283,7 +294,7 @@ for epoch in range(num_epochs):
             variables_to_save = [arr_d_fake, arr_d_real]
             
             for z,variable in enumerate(variables_to_save):
-                save_progress('v4_test_wgan', variable_names[z], variable)
+                save_progress('complex_test', variable_names[z], variable)
             
             arr_d_fake = []
             arr_d_real = []
