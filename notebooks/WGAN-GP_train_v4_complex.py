@@ -37,7 +37,7 @@ use_simple_weights = False
 use_saved_weights = True # overrides simple weights (if True)
 
 g_iters = 1 # 5
-d_iters = 5 # 1, discriminator is called critic in WGAN paper
+d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
 
