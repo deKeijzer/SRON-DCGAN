@@ -24,17 +24,20 @@ torch.manual_seed(manualSeed)
 """
 Local variables
 """
-selected_gpus = [0,1] # Selected GPUs
+selected_gpus = [0] # Selected GPUs
 
-path = '/datb/16011015/MakeAI/ASPAs//' # Storage location of the train/test data
+#path = '/datb/16011015/MakeAI/ASPAs//' # Storage location of the train/test data
+path = '/shared/datasets/16011015/MakeAI_SURFsara/ASPAs/' # gpu server
+#path = '/shared/datasets/16011015/MakeAI/ASPAs/'
+
 
 print('Loading data...')
-images = np.load(path+'MakeAI_train.npy').astype('float32')
+images = np.load(path+'MakeAI_train_complex.npy').astype('float32')
 
-#images = images[:100000] # select first ... images
+#images = images[:2000] # select first ... images
 
 use_simple_weights = False
-use_saved_weights = True # overrides simple weights (if True)
+use_saved_weights = False # overrides simple weights (if True)
 
 g_iters = 1 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
@@ -44,12 +47,11 @@ d_iters = 1 # 1, discriminator is called critic in WGAN paper
 """
 Local variables that generally stay unchanged
 """
-batch_size = 64 # 64
+batch_size = 2**6 # 64
 num_epochs = 10*10**6
 
 lrG = 2e-4 # 2e-4
 lrD = 2e-4
-
 beta1 = 0.5 # beta1 for Adam
 beta2 = 0.9 # beta2 for Adam
 
@@ -111,8 +113,8 @@ netD.apply(weights_init)
 if use_simple_weights:
     try:
         # Load saved weights, 'netG_simple_1' to start from pretrained model
-        netG.load_state_dict(torch.load('gan_data//weights//netG_simple_1', map_location=device))
-        netD.load_state_dict(torch.load('gan_data//weights//netD_simple_1', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_simple_11', map_location=device))
+        netD.load_state_dict(torch.load('gan_data//weights//netD_simple_11', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -179,7 +181,6 @@ def save_progress(experiment_name, variable_name, progress_list):
     np.save(file_name, file)
     #file.close()
 
-
 """
 Highly adapted from: https://github.com/jalola/improved-wgan-pytorch/blob/master/gan_train.py
 """
@@ -204,7 +205,7 @@ for epoch in range(num_epochs):
         
         # Calculate batch mean & std values, instead of using the mean/std of the complete train set.
         #real_mean = real.mean()
-        #real_std = real.std()
+        real_std = real.std()
 
         for _ in range(g_iters):
             netG.zero_grad()
@@ -213,13 +214,13 @@ for epoch in range(num_epochs):
             fake = netG(noise)
             
             # Additional loss terms
-            #mean_L = MSELoss(netG(noise).mean(), real_mean)*1 # 3
-            #std_L = MSELoss(netG(noise).std(), real_std)*1 # 3
+            #mean_L = MSELoss(netG(noise).mean(), real_mean)*0.3 # 3
+            std_L = MSELoss(netG(noise).std(), real_std)*0.3 # 3
             
             mean_L = 0
-            std_L = 0
+            #std_L = 0
 
-            g_cost = netD(fake).mean()  - mean_L - std_L
+            g_cost = netD(fake).mean() - mean_L - std_L
             g_cost.backward(mone)
             g_cost = -g_cost # -1 to maximize g_cost
 
@@ -251,7 +252,7 @@ for epoch in range(num_epochs):
             gradient_penalty = calc_gradient_penalty(netD, real, fake, b_size)
 
             # final disc cost
-            d_cost = d_fake - d_real + gradient_penalty
+            d_cost = (d_fake - d_real + gradient_penalty)-10
 
             d_cost.backward()
             
@@ -268,8 +269,8 @@ for epoch in range(num_epochs):
         Save weights and print statistics
         """
         weights_saved = False
-        if (iters % 100 == 0): # save weights every % .... iters
-            #print('weights saved')
+        if (iters % 128 == 0): # save weights every % .... iters
+            print('weights saved')
             if ngpu > 1:
                 torch.save(netG.module.state_dict(), 'gan_data//weights//netG_complex_1')
                 torch.save(netD.module.state_dict(), 'gan_data//weights//netD_complex_1')
@@ -288,7 +289,8 @@ for epoch in range(num_epochs):
         if iters == 0:
             arr_d_fake = []
             arr_d_real = []
-            
+        
+        """
         if (iters % (64) == 0) and (iters != 0):
             variable_names = ['d_fake', 'd_real']
             variables_to_save = [arr_d_fake, arr_d_real]
@@ -298,7 +300,8 @@ for epoch in range(num_epochs):
             
             arr_d_fake = []
             arr_d_real = []
-            print('saved variable progress')
+            #print('saved variable progress')
+        """
         
         arr_d_fake.append(d_fake.detach().cpu().numpy())
         arr_d_real.append(d_real.detach().cpu().numpy())

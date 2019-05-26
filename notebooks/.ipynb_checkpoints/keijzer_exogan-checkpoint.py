@@ -50,7 +50,8 @@ def load_wavelengths():
     """
     Loads ExoGAN wavelengths file
     """
-    path = '/datb/16011015/ExoGAN_data//'
+    #path = '/datb/16011015/ExoGAN_data//'
+    path = '/shared/datasets/16011015/ExoGAN_data/ExoGAN_data/'
     wavelengths = pd.read_csv(path+'wnw_grid.txt', header=None)
     wavelengths.columns = ['wavelength']
     return wavelengths
