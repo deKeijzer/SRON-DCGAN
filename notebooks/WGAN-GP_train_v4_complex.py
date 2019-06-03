@@ -37,9 +37,9 @@ images = np.load(path+'MakeAI_train_complex.npy').astype('float32')
 #images = images[:2000] # select first ... images
 
 use_simple_weights = False
-use_saved_weights = False # overrides simple weights (if True)
+use_saved_weights = True # overrides simple weights (if True)
 
-g_iters = 1 # 5
+g_iters = 3 # 5
 d_iters = 1 # 1, discriminator is called critic in WGAN paper
 
 
@@ -113,8 +113,8 @@ netD.apply(weights_init)
 if use_simple_weights:
     try:
         # Load saved weights, 'netG_simple_1' to start from pretrained model
-        netG.load_state_dict(torch.load('gan_data//weights//netG_simple_11', map_location=device))
-        netD.load_state_dict(torch.load('gan_data//weights//netD_simple_11', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_simple_1', map_location=device))
+        netD.load_state_dict(torch.load('gan_data//weights//netD_simple_1', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -123,8 +123,8 @@ if use_simple_weights:
 if use_saved_weights:
     try:
         # Load saved weights, 'netG_simple_1' to start from pretrained model
-        netG.load_state_dict(torch.load('gan_data//weights//netG_complex_11', map_location=device))
-        netD.load_state_dict(torch.load('gan_data//weights//netD_complex_11', map_location=device))
+        netG.load_state_dict(torch.load('gan_data//weights//netG_complex_1', map_location=device))
+        netD.load_state_dict(torch.load('gan_data//weights//netD_complex_1', map_location=device))
         print('Succesfully loaded saved weights.')
     except:
         print('Could not load saved weights, using new ones.')
@@ -205,7 +205,7 @@ for epoch in range(num_epochs):
         
         # Calculate batch mean & std values, instead of using the mean/std of the complete train set.
         #real_mean = real.mean()
-        real_std = real.std()
+        #eal_std = real.std()
 
         for _ in range(g_iters):
             netG.zero_grad()
@@ -215,10 +215,10 @@ for epoch in range(num_epochs):
             
             # Additional loss terms
             #mean_L = MSELoss(netG(noise).mean(), real_mean)*0.3 # 3
-            std_L = MSELoss(netG(noise).std(), real_std)*0.3 # 3
+            #td_L = MSELoss(netG(noise).std(), real_std)*0.3
             
             mean_L = 0
-            #std_L = 0
+            std_L = 0
 
             g_cost = netD(fake).mean() - mean_L - std_L
             g_cost.backward(mone)
@@ -252,7 +252,7 @@ for epoch in range(num_epochs):
             gradient_penalty = calc_gradient_penalty(netD, real, fake, b_size)
 
             # final disc cost
-            d_cost = (d_fake - d_real + gradient_penalty)-10
+            d_cost = (d_fake - d_real + gradient_penalty)*3
 
             d_cost.backward()
             
@@ -272,11 +272,11 @@ for epoch in range(num_epochs):
         if (iters % 128 == 0): # save weights every % .... iters
             print('weights saved')
             if ngpu > 1:
-                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_complex_1')
-                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_complex_1')
+                torch.save(netG.module.state_dict(), 'gan_data//weights//netG_complex_11')
+                torch.save(netD.module.state_dict(), 'gan_data//weights//netD_complex_11')
             else:
-                torch.save(netG.state_dict(), 'gan_data//weights//netG_complex_1')
-                torch.save(netD.state_dict(), 'gan_data//weights//netD_complex_1')
+                torch.save(netG.state_dict(), 'gan_data//weights//netG_complex_11')
+                torch.save(netD.state_dict(), 'gan_data//weights//netD_complex_11')
             
         
         if i % (16) == 0:

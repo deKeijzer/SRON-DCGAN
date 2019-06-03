@@ -155,7 +155,7 @@ def plot_trans(x,y, multi=False, savefig=False, label=None, x_max=None):
 
 def scale_param(X, X_min, X_max):
     """
-    Formule source: 
+    Formula source: 
     https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.MinMaxScaler.html
     
     In this case 1 is max, 0 is min
@@ -695,8 +695,6 @@ def ASPA_complex_v1(trans_file, params_file, ariels_file):
     del params['Tform'] # delete this because it's only one value...
 
     """Transform certain parameters from linear to log10 scale"""
-    # TO DO: Find out form Michiel what's been sampled in which way
-
     to_log10 = ['H2O', 'CO2', 'CO', 'CH4', 'SO2', 'NH3', 'HCN', 'C2H2', 'C2H4', 'H2', 'He', 'Na', 'K', 'TiO', 'VO']
     to_log = ['Dplanet', 'TeffP', 'fdry', 'fwet', 'cloud1:Sigmadot', 'cloud1:Kzz', 'f_dry', 'f_wet', 'P', ]
 
@@ -731,21 +729,11 @@ def ASPA_complex_v1(trans_file, params_file, ariels_file):
     in order: ''Mp', 'T', 'CH4', 'Rp', 'H2O', 'CO2', 'CO'
     """
 
-    mins = [0.042567043,
-     162.714,
-     -9.601192269796735,
-     0.14990851,
-     -8.113734940970243,
-     -13.041149548320321,
-     -13.29362364416031]
+    mins = [1.03709980e-02,  1.17939000e+02, -1.15780672e+01,  1.06085820e-01,
+       -2.60739664e+01, -7.13744818e+01, -5.65058454e+01]
 
-    maxs = [9.9972309,
-     2481.179,
-     -2.6158258611929663,
-     2.9987519,
-     -2.3853136577179876,
-     -4.269621531412357,
-     -2.599807511407424]
+    maxs = [9.99992070e+00,  4.49183800e+03, -2.59602204e+00,  2.99990960e+00,
+           -1.55346283e+00, -3.81987412e+00, -2.60049934e+00]
 
     for i,key in enumerate(exo):
         exo[key] = scale_param(exo[key], mins[i], maxs[i])
@@ -756,19 +744,20 @@ def ASPA_complex_v1(trans_file, params_file, ariels_file):
     in order: 'Dplanet', 'betaT', 'TeffP', 'fdry', 'fwet', 'cloud1:Sigmadot', 'cloud1:Kzz', 'Tform', 'f_dry', 'f_wet', 'COratio', 'metallicity', 'P', 'SO2', 'NH3', 'HCN', 'C2H2', 'C2H4', 'H2', 'He', 'Na', 'K', 'TiO', 'VO'
     """
 
-    mins = np.array([-1.99982975,   0.1000388 ,   1.00126179,  -0.99978456,
-            -0.99937355, -18.99565657,   6.00145523,  -0.99978456,
-            -0.99937355,   0.05947539,  -0.37582021,  -2.14218522,
-           -33.71421773,  -9.68739956, -21.28433086, -31.69229008,
-           -21.57430279,  -0.39308147,  -0.95821268, -14.73306309,
-           -16.52432881, -18.10646016, -18.50182734])
+    # Manually shifted some parameters that didn't normalize properly, e.g. they had a mean of -2, +2, +5 etc.
+    mins = np.array([-1.99999309-2,  1.00001580e-01,  1.00003809+2, -9.99982368e-01,
+           -9.99997568e-01, (-1.89999116e+01)-20,  6.00000439+10, -9.99982368e-01,
+           -9.99997568e-01,  5.79562710e-02, -3.75368250e-01, -3.46635502e+00,
+           -9.85062632e+01, -1.03949105e+01, -6.24317983e+01, -9.89991323e+01,
+           -5.87249191e+01, -9.09036923e-01, -1.05571478e+00, -5.55917600e+01,
+           -5.88667805e+01, -6.05094797e+01, -4.31835598e+01])
 
-    maxs = np.array([-0.69903435,   0.2499561 ,   2.39778685,   0.99962839,
-             0.99885968, -11.00131038,   9.99344688,   0.99962839,
-             0.99885968,   1.1501613 ,   0.81627806,   1.76797172,
-            -7.95078198,  -3.9465374 ,  -4.73565449,  -4.37582107,
-            -7.20558167,  -0.06844043,  -0.83624248,  -4.53106219,
-            -5.74617756,  -6.01139646,  -7.22628667])
+    maxs = np.array([-0.69897819-2,   0.2499957 ,   2.39792597+2,   0.99995036,
+             0.99999482, -11.00013972-20,   9.99996661+10,   0.99995036,
+             0.99999482,   1.1560853 ,   0.825827  ,   2.95588009,
+            -5.67964597,  -3.93591656,  -4.85542579,  -4.23306691,
+            -6.86043573,  -0.06844043,  -0.82623118,  -4.52988365,
+            -5.74112337,  -5.88773023,  -6.99353396])
 
     for i,key in enumerate(arcis):
         arcis[key] = scale_param(arcis[key], mins[i], maxs[i])
